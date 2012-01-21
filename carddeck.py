@@ -48,6 +48,7 @@ class Card:
             'color': self._suit[2],
             'filled': self._suit[3],
             'outline': self._suit[4],
+            'all': self._suit,
         }[fmt]
 
     def color(self, width=8):
