@@ -13,7 +13,7 @@ CARDRANKS = (
     ('Seven', '7', 7),
     ('Eight', '8', 8),
     ('Nine',  '9', 9),
-    ('Ten',   'T', 10),
+    ('Ten',   '10', 10),
     ('Jack',  'J', 11),
     ('Queen', 'Q', 12),
     ('King',  'K', 13),
@@ -29,20 +29,34 @@ CARDSUITS = (
 
 class Card:
     def __init__(self, rank, suit):
-        self.rank = rank
-        self.suit = suit
+        self._rank = rank
+        self._suit = suit
+
+    def rank(self, fmt='short'):
+        return {
+            'short': self._rank[1],
+            'long': self._rank[0],
+            'number': self._rank[2],
+            'all': self._rank,
+        }[fmt]
+
+    def suit(self, fmt='ideo'):
+        return {
+            'ideo': self._suit[4] if self._suit[2] == 'R' else self._suit[3],
+            'long': self._suit[0],
+            'short': self._suit[1],
+            'color': self._suit[2],
+            'filled': self._suit[3],
+            'outline': self._suit[4],
+        }[fmt]
 
     def color(self, width=8):
-        color = 'red' if self.suit[2] == 'R' else 'black'
-        rank = '10' if self.rank[2] == 10 else self.rank[1]
-        text = '{}{} '.format(rank, self.suit[3])
+        color = 'red' if self.suit('color') == 'R' else 'black'
+        text = ' {}{} '.format(self.rank(), self.suit('filled'))
         return colorize(text.ljust(width), fg=color, bg='white', bgalt=True)
 
     def __repr__(self):
-        suit = self.suit[4] if self.suit[2] == 'R' else self.suit[3]
-        return '{}{} ({} of {})'.format(
-            self.rank[1], suit, self.rank[0], self.suit[0]
-        )
+        return '{}{} '.format(self.rank(), self.suit())
 
 class Deck:
     cards = []
