@@ -86,18 +86,22 @@ class Deck:
         return card
 
     def reset(self):
-        self.cards = self.used
+        self.used.reverse()
+        self.cards = self.cards + self.used
         self.used = []
 
     def deal(self, num_hands, num_per_hand=None):
+        if not num_per_hand:
+            num_per_hand = len(self.cards)
         hands = []
         for n in range(0, num_hands):
             hands.append([])
-        for n in range(0, num_hands):
-            for i,c in enumerate(self):
-                hand = i % num_hands
-                if not num_per_hand or len(hands[hand]) < num_per_hand:
-                    hands[hand].append(c)
+        for n in range(0, num_per_hand):
+            for i in range(0, num_hands):
+                try:
+                    hands[i].append(self.next())
+                except StopIteration:
+                    pass
         return hands
 
 
