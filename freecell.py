@@ -1,20 +1,29 @@
 #!/usr/bin/env python
 
-from carddeck import Card, Deck, CardSuit, CardRank
+import copy
+from carddeck import Card, CardStack, Deck, CardSuit, CardRank
 
 class FreecellCard(Card):
 
     def __init__(self, rank, suit):
-        super(FreecellCard).__init__(self, rank, suit)
+        super(FreecellCard, self).__init__(rank, suit)
 
     def __repr__(self):
         return self.color(8)
 
 
 class FreecellDeck(Deck):
+    """
+    >>> deck = FreecellDeck()
+    >>> len(deck.cards)
+    52
+    >>> card = deck.next()
+    >>> isinstance(card, FreecellCard)
+    True
+    """
 
     def __init__(self):
-        super(FreecellDeck).__init__(self)
+        super(FreecellDeck, self).__init__()
         basic_cards = self.cards
         self.cards = []
         for c in basic_cards:
@@ -33,36 +42,30 @@ class InvalidColumnCardError(Exception):
 class InvalidFoundationCardError(Exception):
     pass
 
+class FreecellInvalidMoveError(Exception):
+    pass
 
-class CardStack:
 
-    def __init__(self, cards):
-        self.cards = cards
-
-    def top_card(self):
-        try:
-            return self.cards[-1]
-        except IndexError:
-            return None
-
-    def add_card(self, card):
-        self.cards.append(card)
-
-    def remove_top_card(self):
-        return self.cards.pop()
-
-    def remove_card(self):
-        return self.remove_top_card()
-
-    @property
-    def length(self):
-        return len(self.cards)
 
 
 class FoundationPile(CardStack):
+    """
+    >>> deck = FreecellDeck()
+    >>> fp = FoundationPile('Hearts')
+    >>> ace_hearts = FreecellCard(rank=CardRank('Ace'), suit=CardSuit('Hearts'))
+    >>> two_hearts = FreecellCard(rank=CardRank('Two'), suit=CardSuit('Hearts'))
+    >>> fp.next_card() == ace_hearts
+    True
+    >>> fp.add_card(ace_hearts)
+    >>> fp.next_card() == two_hearts
+    True
+    >>> fp.add_card(two_hearts)
+    >>> fp.rank() == CardRank('Two')
+    True
+    """
 
     def __init__(self, suit):
-        self.cards = []
+        super(FoundationPile, self).__init__([])
         self.suit = CardSuit(suit)
 
     def rank(self):
@@ -83,8 +86,7 @@ class FoundationPile(CardStack):
         if not top:
             return FreecellCard(rank=CardRank('Ace'), suit=self.suit)
         else:
-            return FreecellCard(rank=CardRank(top.rank.next_rank()),
-                                suit=self.suit)
+            return FreecellCard(top.rank.next_rank(), suit=self.suit)
 
 
 class AltDescCardColumn(CardStack):
@@ -111,20 +113,27 @@ class AltDescCardColumn(CardStack):
 
 
 class Freecells:
-    cells = [None, None, None, None]
+    """
+    >>> fcs = Freecells()
+    >>> fcs.free()
+    4
+    """
+    empty_cell = CardStack([], 1)
 
     def __init__(self):
-        pass
+        self.cells = []
+        for n in range(0,4):
+            self.cells.append(copy.copy(self.empty_cell))
 
     def free(self):
-        return self.cells.count(None)
+        return self.cells.count(self.empty_cell)
 
     def add_card(self, card, position=None):
         if self.free():
             if not position:
                 position = self.cells.index(None)
             if self.cells[position] == None:
-                self.cells[position] = card
+                self.cells[position].add_card(card)
                 return position
             else:
                 raise FreeCellOccupiedError
@@ -238,4 +247,15 @@ class FreecellGame():
 
 
 if __name__ == '__main__':
-    pass
+    from optparse import OptionParser
+    usage = "Usage: %prog [--test]"
+    parser = OptionParser(usage=usage)
+    parser.add_option('-t', '--test', action='store_true', default=False,
+                      help="Run doctests")
+    options, args = parser.parse_args()
+
+    if options.test:
+        import doctest
+        doctest.testmod()
+    else:
+        print "eventually running this will let you play the game"
