@@ -191,6 +191,18 @@ class CardStack(BaseObject):
     """
     A CardStack is a list of cards in which only the top card
     is accessible
+    >>> stack = CardStack([])
+    >>> card = Card('5','h')
+    >>> stack.add_card(card)
+    >>> stack.length
+    1
+    >>> print stack
+    Five of Hearts
+    >>> stack.add_card(Card('6','c'))
+    >>> stack.length
+    2
+    >>> print stack
+    Five of Hearts, Six of Clubs
     """
 
     def __init__(self, cards, maxlen=None):
@@ -218,6 +230,10 @@ class CardStack(BaseObject):
     @property
     def length(self):
         return len(self.cards)
+
+    def __repr__(self):
+        cards = ['{} of {}'.format(c.rank.label, c.suit.label) for c in self.cards]
+        return ', '.join(cards)
 
 
 class Deck(BaseObject):
