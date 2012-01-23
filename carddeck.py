@@ -33,8 +33,27 @@ class InvalidCardRankError(Exception):
 class InvalidCardSuitError(Exception):
     pass
 
+class CardStackFullError(Exception):
+    pass
 
-class CardRank:
+class BaseObject(object):
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) \
+               and self.__dict__ == other.__dict__
+
+
+class CardRank(BaseObject):
+    """
+    >>> rank = CardRank('Ace')
+    >>> rank.num
+    1
+    >>> rank.label
+    'Ace'
+    >>> next = CardRank('Two')
+    >>> rank.next_rank() == next
+    True
+    """
+    rank = None
 
     def __init__(self, rank):
         if isinstance(rank, str):
@@ -44,16 +63,16 @@ class CardRank:
                 self.rank = r
                 break
         if not self.rank:
-            raise InvalidCardRankError
+            raise InvalidCardRankError(rank)
 
     def next_rank(self, round_the_corner=False):
-        if self.rank.label == 'King':
+        if self.label == 'King':
             if round_the_corner:
                 return CardRank('Ace')
             else:
                 return None
         else:
-            return CardRank(self.rank.num + 1)
+            return CardRank(self.num + 1)
 
     def prev_rank(self, round_the_corner=False):
         if self.rank.label == 'Ace':
@@ -80,11 +99,19 @@ class CardRank:
         return self.c
 
 
-class CardSuit:
+class CardSuit(BaseObject):
+    """
+    >>> h = CardSuit('Hearts')
+    >>> h.label
+    'Hearts'
+    """
+    suit = None
 
     def __init__(self, suit):
+        if isinstance(suit, str):
+            suit = suit.title()
         for s in CARDSUITS:
-            if suit == s or suit.title() in s:
+            if suit == s or suit in s:
                 self.suit = s
                 break
         if not self.suit:
@@ -122,7 +149,7 @@ class CardSuit:
         return self.symbol
 
 
-class Card:
+class Card(BaseObject):
 
     def __init__(self, rank, suit):
         if isinstance(rank, CardRank):
@@ -160,11 +187,55 @@ class Card:
     def __repr__(self):
         return '{}{} '.format(self.rank, self.suit)
 
-class Deck:
-    cards = []
-    used = []
+class CardStack(BaseObject):
+    """
+    A CardStack is a list of cards in which only the top card
+    is accessible
+    """
+
+    def __init__(self, cards, maxlen=None):
+        self.cards = cards
+        self.maxlen = maxlen
+
+    def top_card(self):
+        try:
+            return self.cards[-1]
+        except IndexError:
+            return None
+
+    def add_card(self, card):
+        if self.length == self.maxlen:
+            raise CardStackFullError
+        else:
+            self.cards.append(card)
+
+    def remove_top_card(self):
+        return self.cards.pop()
+
+    def remove_card(self):
+        return self.remove_top_card()
+
+    @property
+    def length(self):
+        return len(self.cards)
+
+
+class Deck(BaseObject):
+    """
+    >>> deck = Deck()
+    >>> len(deck.cards)
+    52
+    >>> deck = Deck(2)
+    >>> len(deck.cards)
+    104
+    >>> testcard = Card(3, 'Clubs')
+    >>> deck.cards.count(testcard)
+    2
+    """
 
     def __init__(self, number_of_decks=1):
+        self.cards = []
+        self.used = []
         for n in range(0, number_of_decks):
             self.load_cards()
 
@@ -207,3 +278,6 @@ class Deck:
         return hands
 
 
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
