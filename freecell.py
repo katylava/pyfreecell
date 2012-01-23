@@ -115,22 +115,47 @@ class Freecells:
     >>> fcs = Freecells()
     >>> fcs.free()
     4
+    >>> five_hearts = FreecellCard('5', 'Hearts')
+    >>> fcs.add_card(five_hearts) # returns position card was added to
+    0
+    >>> fcs.get_card_at_position(0) == fcs.empty_cell
+    False
+    >>> fcs.cells
+    [Five of Hearts, , , ]
+    >>> fcs.empty_cell == CardStack([], 1)
+    True
+    >>> fcs.free()
+    3
+    >>> fcs.get_card_at_position(0) == five_hearts
+    True
+    >>> two_hearts = FreecellCard('Two', 'Hearts')
+    >>> fcs.add_card(two_hearts, 3)
+    3
+    >>> fcs.free()
+    2
+    >>> fcs.first_open()
+    1
+    >>> fcs.cells
+    [Five of Hearts, , , Two of Hearts]
     """
     empty_cell = CardStack([], 1)
 
     def __init__(self):
         self.cells = []
         for n in range(0,4):
-            self.cells.append(copy.copy(self.empty_cell))
+            self.cells.append(copy.deepcopy(self.empty_cell))
 
     def free(self):
         return self.cells.count(self.empty_cell)
 
+    def first_open(self):
+        return self.cells.index(self.empty_cell)
+
     def add_card(self, card, position=None):
         if self.free():
             if not position:
-                position = self.cells.index(None)
-            if self.cells[position] == None:
+                position = self.first_open()
+            if self.cells[position].length == 0:
                 self.cells[position].add_card(card)
                 return position
             else:
@@ -139,16 +164,16 @@ class Freecells:
             raise NoFreecellsError
 
     def get_card_at_position(self, position):
-        return self.cells[position]
+        return self.cells[position].top_card()
 
     def remove_card_from_position(self, position):
-        card = self.cells[position]
-        self.cells[position] = None
+        card = self.cells[position].top_card()
+        self.cells[position].remove_top_card()
         return card
 
     def remove_card(self, card):
-        position = self.cells.index(card)
-        self.cells[position] = None
+        position = self.cells.index(CardStack([card], 1))
+        self.cells[position].remove_top_card()
 
 
 class FreecellGame():
