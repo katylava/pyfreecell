@@ -27,37 +27,138 @@ CARDSUITS = (
     ('Clubs',    'C', 'B', '♣', '♧'),
 )
 
-class Card:
-    def __init__(self, rank, suit):
-        self._rank = rank
-        self._suit = suit
+class InvalidCardRankError(Exception):
+    pass
 
-    def rank(self, fmt='short'):
-        return {
-            'short': self._rank[1],
-            'long': self._rank[0],
-            'number': self._rank[2],
-            'all': self._rank,
-        }[fmt]
+class InvalidCardSuitError(Exception):
+    pass
 
-    def suit(self, fmt='ideo'):
-        return {
-            'ideo': self._suit[4] if self._suit[2] == 'R' else self._suit[3],
-            'long': self._suit[0],
-            'short': self._suit[1],
-            'color': self._suit[2],
-            'filled': self._suit[3],
-            'outline': self._suit[4],
-            'all': self._suit,
-        }[fmt]
 
-    def color(self, width=8):
-        color = 'red' if self.suit('color') == 'R' else 'black'
-        text = ' {}{} '.format(self.rank(), self.suit('filled'))
-        return colorize(text.ljust(width), fg=color, bg='white', bgalt=True)
+class CardRank:
+
+    def __init__(self, rank):
+        if isinstance(rank, str):
+            rank = rank.title()
+        for r in CARDRANKS:
+            if rank == r or rank in r:
+                self.rank = r
+                break
+        if not self.rank:
+            raise InvalidCardRankError
+
+    def next_rank(self, round_the_corner=False):
+        if self.rank.label == 'King':
+            if round_the_corner:
+                return CardRank('Ace')
+            else:
+                return None
+        else:
+            return CardRank(self.rank.num + 1)
+
+    def prev_rank(self, round_the_corner=False):
+        if self.rank.label == 'Ace':
+            if round_the_corner:
+                return CardRank('King')
+            else:
+                return None
+        else:
+            return CardRank(self.rank.num - 1)
+
+    @property
+    def label(self):
+        return self.rank[0]
+
+    @property
+    def c(self):
+        return self.rank[1]
+
+    @property
+    def num(self):
+        return self.rank[2]
 
     def __repr__(self):
-        return '{}{} '.format(self.rank(), self.suit())
+        return self.c
+
+
+class CardSuit:
+
+    def __init__(self, suit):
+        for s in CARDSUITS:
+            if suit == s or suit.title() in s:
+                self.suit = s
+                break
+        if not self.suit:
+            raise InvalidCardSuitError
+
+    @property
+    def label(self):
+        return self.suit[0]
+
+    @property
+    def c(self):
+        return self.suit[1]
+
+    @property
+    def color(self):
+        col = self.suit[2]
+        return 'red' if col == 'R' else 'black'
+
+    @property
+    def filled_symbol(self):
+        return self.suit[3]
+
+    @property
+    def hollow_symbol(self):
+        return self.suit[4]
+
+    @property
+    def symbol(self):
+        if self.color == 'R':
+            return self.hollow_symbol
+        else:
+            return self.filled_symbol
+
+    def __repr__(self):
+        return self.symbol
+
+
+class Card:
+
+    def __init__(self, rank, suit):
+        if isinstance(rank, CardRank):
+            self.rank = rank
+        else:
+            self.rank = CardRank(rank)
+        if isinstance(suit, CardSuit):
+            self.suit = suit
+        else:
+            self.suit = CardSuit(suit)
+
+    def color(self, width=8):
+        color = self.suit.color
+        text = ' {}{} '.format(self.rank.c, self.suit.filled_symbol)
+        return colorize(text.ljust(width), fg=color, bg='white', bgalt=True)
+
+    def is_same_suit_as(self, card):
+        return self.suit == card.suit
+
+    def is_same_color_as(self, card):
+        return self.suit.color == card.suit.color
+
+    def is_same_rank_as(self, card):
+        return self.rank == card.rank
+
+    def rel_rank(self, card, round_the_corner=False):
+        rank_diff = self.rank.num - card.rank.num
+        if round_the_corner and abs(rank_diff) == 12:
+            # if self is A and card is K, rank_diff is -12, 
+            # but we want it to be 1
+            # if self is K and card is A, rank_diff is 12, 
+            # but we want it to be -1
+            rank_diff = 1 if rank_diff == -12 else -1
+
+    def __repr__(self):
+        return '{}{} '.format(self.rank, self.suit)
 
 class Deck:
     cards = []
