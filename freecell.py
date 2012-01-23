@@ -8,8 +8,8 @@ class FreecellCard(Card):
     def __init__(self, rank, suit):
         super(FreecellCard, self).__init__(rank, suit)
 
-    def __repr__(self):
-        return self.color(8)
+    def draw(self, width):
+        return self.color(width)
 
 
 class FreecellDeck(Deck):
@@ -85,6 +85,12 @@ class FoundationPile(CardStack):
             return FreecellCard(rank=CardRank('Ace'), suit=self.suit)
         else:
             return FreecellCard(top.rank.next_rank(), suit=self.suit)
+
+    def __repr__(self):
+        if self.length == 0:
+            return self.suit.symbol
+        else:
+            return self.top_card().__repr__()
 
 
 class AltDescCardColumn(CardStack):
@@ -278,15 +284,51 @@ class FreecellGame():
     def freecell_count(self):
         return self.freecells.free()
 
-    def draw_board(self, colwidth=5):
+    def draw_board(self, cardwidth=8, suit_offset=2):
+        # the suit symbols take up less than one character, so the offset
+        # is how much you have to subtract from the width in spots that
+        # do not have a suit character
+        if cardwidth - suit_offset < 5:
+            cardwidth = 5 + suit_offset
+
         longest_column = 0
         for c in self.columns:
             if c.length > longest_column:
                 longest_column = c.length
 
+        space = " "*((cardwidth - suit_offset)+1)
+        blank = "_"*(cardwidth - suit_offset) + " "
+        found = "{}" + "_"*(cardwidth - suit_offset - 1) + " "
 
-
-
+        # empty space before foundations
+        board = space*4
+        # foundations 
+        for k, f in self.foundation.iteritems():
+            if f.length == 0:
+                board = board + found.format(f.suit.symbol)
+            else:
+                board = board + f.top_card().draw(cardwidth) + " "
+        # freecells
+        board = board + "\n"
+        for c in self.freecells.cells:
+            if c.length == 0:
+                board = board + blank
+            else:
+                board = board + c.top_card().draw(cardwidth) + " "
+        # empty space after freecells 
+        board = board + space*4
+        # empty row to avoid confusing freecells with columns
+        board = board + "\n" + space*8
+        # rows
+        for n in range(0, longest_column):
+            board = board + "\n"
+            for c in self.columns:
+                card = c.card_at(n)
+                if card:
+                    board = board + card.draw(cardwidth) + " "
+                else:
+                    board = board + space
+        return board
 
 
 
@@ -296,10 +338,21 @@ if __name__ == '__main__':
     parser = OptionParser(usage=usage)
     parser.add_option('-t', '--test', action='store_true', default=False,
                       help="Run doctests")
+    parser.add_option('-w', '--width', default=7, help="Card width")
     options, args = parser.parse_args()
 
     if options.test:
         import doctest
         doctest.testmod()
     else:
-        print "eventually running this will let you play the game"
+        game = FreecellGame()
+        move = None
+        print game.draw_board(options.width)
+        while move not in ['q','Q','quit','exit']:
+            print "> "
+            move = raw_input()
+            if move in ['n','N','new']:
+                game = FreecellGame()
+            else:
+                game.move(move)
+            print game.draw_board(options.width)
