@@ -187,9 +187,12 @@ class FreecellGame():
     4
     """
 
-    def __init__(self):
-        self.deck = FreecellDeck()
-        self.deck.shuffle()
+    def __init__(self, deck=None):
+        if not deck:
+            self.deck = FreecellDeck()
+            self.deck.shuffle()
+        else:
+            self.deck = deck
         self.columns = []
         self.freecells = Freecells()
         self.foundation = {
@@ -199,82 +202,91 @@ class FreecellGame():
             'C': FoundationPile('Clubs'),
         }
         self.history = []
+        self.replay = []
         columns = self.deck.deal(8)
         for c in columns:
             self.columns.append(AltDescCardColumn(c))
 
+    def parse_moves(self, moves):
+        movelist = []
+        if moves in ['z', 'zz']:
+            movelist.append(('z','z'))
+        else:
+            moves = list(moves)
+            while len(moves) >= 2:
+                movelist.append((moves.pop(0), moves.pop(0)))
+        return movelist
+
     def move(self, moves):
-        moves = list(moves)
         cols = list('asdfjkl;')
         cells = list('qwert')
-        found = 'u'
-        while len(moves) >= 2:
-            fr, to = (moves.pop(0), moves.pop(0))
-            if fr in cols and to in cols:
-                self.move_from_column_to_column(cols.index(fr), cols.index(to))
-            elif fr in cols and to in cells:
-                fcpos = None if to == 't' else cells.index(to)
-                self.move_to_freecell(cols.index(fr), fcpos)
-            elif fr in cols and to in found:
-                self.move_from_column_to_foundation(cols.index(fr))
-            elif fr in cells and to in cols:
-                self.move_from_freecell_to_column(cells.index(fr), cols.index(to))
-            elif fr in cells and to in found:
-                self.move_from_freecell_to_foundation(cells.index(fr))
+        found = list('uiopy')
+        found_order = list('SHDC')
 
+        movelist = self.parse_moves(moves)
+
+        for fr, to in movelist:
+
+            if fr in cols:
+                move_from = self.columns[cols.index(fr)]
+            elif fr in cells[:-1]: # the last one, 't', is only for moving to
+                move_from = self.freecells.cells[cells.index(fr)]
+            elif fr in found[:-1]: # the last one, 'y', is only for moving to
+                key = found_order[found.index(fr)]
+                move_from = self.foundation[key]
+            elif fr == 'z':
+                # note the swapped order of 'to' and 'from' wrt to
+                # order when appended to history
+                card, move_to, move_from = self.history[-1]
+            else:
+                raise FreecellInvalidMoveError
+
+            card = move_from.top_card()
+
+            if to in cols:
+                move_to = self.columns[cols.index(to)]
+            elif to in cells:
+                if to == 't':
+                    index = self.freecells.first_open()
+                else:
+                    index = cells.index(to)
+                move_to = self.freecells.cells[index]
+            elif to in found:
+                if to == 'y':
+                    key = card.suit.c
+                else:
+                    key = found_order[found.index(to)]
+                move_to = self.foundation[key]
+            elif to == 'z':
+                pass # move_to already set in fr == 'z' condition
+            else:
+                raise FreecellInvalidMoveError
+
+            if self.move_card(card, move_from, move_to):
+                self.replay.append('{}{}'.format(fr, to))
+
+    def move_card(self, card, move_from, move_to):
+        try:
+            move_to.add_card(card)
+        except:
+            raise
+        else:
+            move_from.remove_top_card()
+            self.history.append([card, move_from, move_to])
+            return True
 
     def freecell_count(self):
         return self.freecells.free()
 
-    def move_to_freecell(self, from_col, position=None):
-        card = self.columns[from_col].top_card()
-        try:
-            self.freecells.add_card(card, position)
-        except NoFreecellsError:
-            print 'No free cells'
-        except FreeCellOccupiedError:
-            print 'Already a card in that cell'
-        else:
-            self.columns[from_col].remove_top_card()
+    def draw_board(self, colwidth=5):
+        longest_column = 0
+        for c in self.columns:
+            if c.length > longest_column:
+                longest_column = c.length
 
-    def move_from_freecell_to_column(self, fc, col):
-        card = self.freecells.get_card_at_position(fc)
-        try:
-            self.columns[col].add_card(card)
-        except InvalidColumnCardError:
-            print 'Bad move'
-        else:
-            self.freecells.remove_card(card)
 
-    def move_from_column_to_column(self, from_col, to_col):
-        card = self.columns[from_col].top_card()
-        try:
-            self.columns[to_col].add_card(card)
-        except InvalidColumnCardError:
-            print 'Bad move'
-        else:
-            self.columns[from_col].remove_top_card()
 
-    def move_from_freecell_to_foundation(self, fc):
-        card = self.freecells.get_card_at_position(fc)
-        try:
-            self.foundation[card.suit.c].add_card(card)
-        except InvalidFoundationCardError:
-            print 'Invalid foundation card'
-        else:
-            self.freecells.remove_card(card)
 
-    def move_from_column_to_foundation(self, col):
-        card = self.columns[col].top_card()
-        try:
-            self.foundation[card.suit.c].add_card(card)
-        except InvalidFoundationCardError:
-            print 'Invalid foundation card'
-        else:
-            self.columns[col].remove_top_card()
-
-    def draw_board(self):
-        pass
 
 
 
