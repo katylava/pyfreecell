@@ -75,7 +75,7 @@ class CardRank(BaseObject):
             return CardRank(self.num + 1)
 
     def prev_rank(self, round_the_corner=False):
-        if self.rank.label == 'Ace':
+        if self.label == 'Ace':
             if round_the_corner:
                 return CardRank('King')
             else:
@@ -150,6 +150,12 @@ class CardSuit(BaseObject):
 
 
 class Card(BaseObject):
+    """
+    >>> c1 = Card('10','h')
+    >>> c2 = Card('7', 'd')
+    >>> len(c1.color())== len(c2.color())
+    True
+    """
 
     def __init__(self, rank, suit):
         if isinstance(rank, CardRank):
@@ -164,7 +170,7 @@ class Card(BaseObject):
     def color(self, width=8):
         color = self.suit.color
         text = ' {}{} '.format(self.rank.c, self.suit.filled_symbol)
-        return colorize(text.ljust(width), fg=color, bg='white', bgalt=True)
+        return colorize(text.rjust(width), fg=color, bg='white', bgalt=True)
 
     def is_same_suit_as(self, card):
         return self.suit == card.suit
@@ -220,6 +226,12 @@ class CardStack(BaseObject):
             raise CardStackFullError
         else:
             self.cards.append(card)
+
+    def card_at(self, position):
+        try:
+            return self.cards[position]
+        except IndexError:
+            return None
 
     def remove_top_card(self):
         return self.cards.pop()
