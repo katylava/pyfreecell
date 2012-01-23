@@ -46,8 +46,6 @@ class FreecellInvalidMoveError(Exception):
     pass
 
 
-
-
 class FoundationPile(CardStack):
     """
     >>> deck = FreecellDeck()
@@ -154,20 +152,29 @@ class Freecells:
 
 
 class FreecellGame():
-    columns = []
-    freecells = Freecells()
-    foundation = {
-        'S': FoundationPile('Spades'),
-        'H': FoundationPile('Hearts'),
-        'D': FoundationPile('Diamonds'),
-        'C': FoundationPile('Clubs'),
-    }
-    history = []
+    """
+    >>> game = FreecellGame()
+    >>> game.columns[0].length
+    7
+    >>> game.columns[7].length
+    6
+    >>> game.freecell_count()
+    4
+    """
 
     def __init__(self):
-        deck = FreecellDeck()
-        deck.shuffle()
-        columns = deck.deal(8)
+        self.deck = FreecellDeck()
+        self.deck.shuffle()
+        self.columns = []
+        self.freecells = Freecells()
+        self.foundation = {
+            'S': FoundationPile('Spades'),
+            'H': FoundationPile('Hearts'),
+            'D': FoundationPile('Diamonds'),
+            'C': FoundationPile('Clubs'),
+        }
+        self.history = []
+        columns = self.deck.deal(8)
         for c in columns:
             self.columns.append(AltDescCardColumn(c))
 
