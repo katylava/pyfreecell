@@ -81,7 +81,7 @@ class CardRank(BaseObject):
             else:
                 return None
         else:
-            return CardRank(self.rank.num - 1)
+            return CardRank(self.num - 1)
 
     @property
     def label(self):
