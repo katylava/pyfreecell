@@ -42,6 +42,9 @@ class FreeCellOccupiedError(Exception):
 class InvalidColumnCardError(Exception):
     pass
 
+class InvalidColumnStackError(Exception):
+    pass
+
 class InvalidFoundationCardError(Exception):
     pass
 
@@ -76,11 +79,14 @@ class FoundationPile(CardStack):
         else:
             return None
 
-    def add_card(self, card):
+    def add_card(self, card, force=False):
+        if isinstance(card, CardStack):
+            card = card.top_card()
         if card == self.next_card():
-            self.cards.append(card)
+            self = self + card
         else:
-            raise InvalidFoundationCardError
+            msg = "{} on {}".format(card, self.top_card())
+            raise InvalidFoundationCardError(msg)
 
     def next_card(self):
         top = self.top_card()
@@ -97,26 +103,105 @@ class FoundationPile(CardStack):
 
 
 class AltDescCardColumn(CardStack):
+    """
+    >>> jc = FreecellCard('J','c')
+    >>> qh = FreecellCard('Q','h')
+    >>> col = AltDescCardColumn()
+    >>> col.add_card(qh)
+    >>> col.top_card().rank.prev_rank().label
+    'Jack'
+    >>> jc.rank == col.top_card().rank.prev_rank()
+    True
+    >>> col.add_card(jc)
+    >>> col.valid()
+    True
+    >>> td = FreecellCard(10,'d')
+    >>> col.add_card(td)
+    >>> col.valid()
+    True
+    >>> stack = col.slice_stack(jc)
+    >>> stack.top_card() == td
+    True
+    >>> stack.bottom_card() == jc
+    True
+    >>> deck = Deck()
+    >>> deck.shuffle()
+    >>> fresh = AltDescCardColumn(deck.cards[:5])
+    >>> fresh.add_stack(stack, force=True)
+    >>> fresh.top_stack() == stack
+    True
+    >>> fresh.add_card(FreecellCard(9,'s'))
+    >>> fresh.top_stack().length
+    3
+    >>> fresh.top_stack().bottom_card() == jc
+    True
+    >>> js = FreecellCard('J','s')
+    >>> fresh.top_stack_for(js).bottom_card() == td
+    True
+    >>> print fresh.top_stack_for(FreecellCard(2,'s'))
+    None
+    >>> print fresh.top_stack_for(FreecellCard('k','s'))
+    None
+    >>> fresh.remove_top_stack_for(js)
+    Ten of Diamonds, Nine of Spades
+    >>> fresh.top_card() == jc
+    True
+    """
 
-    def add_card(self, card):
-        if card in self.allowed_cards():
-            self.cards.append(card)
+    def top_stack(self):
+        clone = copy.deepcopy(self)
+        while not clone.valid():
+            clone.cards.pop(0)
+        return clone
+
+    def add_card(self, card, force=False):
+        if force or self.allow_card(card):
+            self = self + card
         else:
-            raise InvalidColumnCardError
+            msg = "{} on {}".format(card, self.top_card())
+            raise InvalidColumnCardError(msg)
 
-    def allowed_cards(self):
+    def add_stack(self, stack, force=False):
+        if isinstance(stack, AltDescCardColumn):
+            if force or self.allow_stack(stack):
+                self = self + stack
+        else:
+            raise InvalidColumnStackError
+
+    def allow_stack(self, stack):
+        return self.allow_card(stack.bottom_card()) and stack.valid()
+
+    def allow_card(self, card):
         top = self.top_card()
-        rank = top.rank.prev_rank()
-        if top.color == 'red':
-            return [
-                FreecellCard(rank, CardSuit('Spades')),
-                FreecellCard(rank, CardSuit('Clubs')),
-            ]
+        if not top:
+            return True
         else:
-            return [
-                FreecellCard(rank, CardSuit('Hearts')),
-                FreecellCard(rank, CardSuit('Diamonds')),
-            ]
+            return card.rank == top.rank.prev_rank() \
+                   and not card.is_same_color_as(top)
+
+    def top_stack_for(self, card):
+        stack = self.top_stack()
+        temp = self.__class__([card])
+        while stack.length > 0 and not temp.allow_stack(stack):
+            stack.cards.pop(0)
+        return None if stack.length == 0 else stack
+
+    def remove_top_stack(self):
+        bottom_card = self.top_stack().bottom_card()
+        return self.slice_stack(bottom_card)
+
+    def remove_top_stack_for(self, card):
+        bottom_card = self.top_stack_for(card).bottom_card()
+        return self.slice_stack(bottom_card)
+
+    def valid(self):
+        temp = self.__class__([])
+        for c in self.cards:
+            try:
+                temp.add_card(c)
+            except InvalidColumnCardError:
+                return False
+        return True
 
 
 class Freecells:
@@ -195,6 +280,11 @@ class FreecellGame():
     >>> game.freecell_count()
     4
     """
+    mv_cols = list('asdfjkl;')
+    mv_cells = list('qwert')
+    mv_found = list('uiopy')
+    mv_found_order = list('SHDC')
+
 
     def __init__(self, deck=None):
         if not deck:
@@ -216,6 +306,9 @@ class FreecellGame():
         for c in columns:
             self.columns.append(AltDescCardColumn(c))
 
+    def top_cards(self):
+        return [c.top_card() for c in self.columns]
+
     def parse_moves(self, moves):
         movelist = []
         if moves in ['z', 'zz']:
@@ -227,65 +320,88 @@ class FreecellGame():
         return movelist
 
     def move(self, moves):
-        cols = list('asdfjkl;')
-        cells = list('qwert')
-        found = list('uiopy')
-        found_order = list('SHDC')
-
         movelist = self.parse_moves(moves)
 
         for fr, to in movelist:
 
-            if fr in cols:
-                move_from = self.columns[cols.index(fr)]
-            elif fr in cells[:-1]: # the last one, 't', is only for moving to
-                move_from = self.freecells.cells[cells.index(fr)]
-            elif fr in found[:-1]: # the last one, 'y', is only for moving to
-                key = found_order[found.index(fr)]
+            if fr in self.mv_cols:
+                move_from = self.columns[self.mv_cols.index(fr)]
+            elif fr in self.mv_cells[:-1]: # the last one, 't', is only for moving to
+                move_from = self.freecells.cells[self.mv_cells.index(fr)]
+            elif fr in self.mv_found[:-1]: # the last one, 'y', is only for moving to
+                key = self.mv_found_order[self.mv_found.index(fr)]
                 move_from = self.foundation[key]
             elif fr == 'z':
                 # note the swapped order of 'to' and 'from' wrt to
                 # order when appended to history
                 card, move_to, move_from = self.history[-1]
             else:
-                raise FreecellInvalidMoveError
+                raise FreecellInvalidMoveError("'{}' is not a move".format(fr))
 
             card = move_from.top_card()
 
-            if to in cols:
-                move_to = self.columns[cols.index(to)]
-            elif to in cells:
+            if to in self.mv_cols:
+                move_to = self.columns[self.mv_cols.index(to)]
+            elif to in self.mv_cells:
                 if to == 't':
                     index = self.freecells.first_open()
                 else:
-                    index = cells.index(to)
+                    index = self.mv_cells.index(to)
                 move_to = self.freecells.cells[index]
-            elif to in found:
+            elif to in self.mv_found:
                 if to == 'y':
                     key = card.suit.c
                 else:
-                    key = found_order[found.index(to)]
+                    key = self.mv_found_order[self.mv_found.index(to)]
                 move_to = self.foundation[key]
             elif to == 'z':
                 pass # move_to already set in fr == 'z' condition
             else:
-                raise FreecellInvalidMoveError
+                raise FreecellInvalidMoveError("'{}' is not a move".format(to))
 
-            if self.move_card(card, move_from, move_to):
+            if self.move_card(card, move_from, move_to, (fr=='z')):
                 self.replay.append('{}{}'.format(fr, to))
 
-    def move_card(self, card, move_from, move_to):
+    def move_card(self, card, move_from, move_to, force=False):
         try:
-            move_to.add_card(card)
+            move_to.add_card(card, force)
         except:
-            raise
+            self.move_stack(move_from, move_to, force=force)
         else:
             move_from.remove_top_card()
             self.history.append([card, move_from, move_to])
             return True
 
+    def move_stack(self, move_from, move_to, force=False):
+        stack = move_from.top_stack_for(move_to.top_card())
+
+        if not stack:
+            raise FreecellInvalidMoveError(
+                "No cards in '{}' for {}".format(move_from, move_to.top_card())
+            )
+
+        if stack.length <= self.freecell_count()+1:
+            try:
+                move_to.add_stack(stack)
+            except InvalidColumnStackError:
+                raise
+            else:
+                move_from.remove_top_stack_for(move_to.top_card())
+        else:
+            raise FreecellInvalidMoveError(
+                "Not enough freecells to move stack '{}'".format(stack)
+            )
+
+
+    def move_all_to_foundation(self):
+        next_on_founds = [f.next_card() for f in self.foundation.values()]
+        for i, card in enumerate(self.top_cards()):
+            if card in next_on_founds:
+                self.move('{}y'.format(self.mv_cols[i]))
+
+
     def freecell_count(self):
-        return self.freecells.free()
+        return self.freecells.free() + self.top_cards().count(None)
 
     def draw_board(self, cardwidth=8, suit_offset=2):
         # the suit symbols take up less than one character, so the offset
@@ -305,8 +421,9 @@ class FreecellGame():
 
         # empty space before foundations
         board = space*4
-        # foundations 
-        for k, f in self.foundation.iteritems():
+        # foundations
+        for s in ['S','H','D','C']:
+            f = self.foundation[s]
             if f.length == 0:
                 board = board + found.format(f.suit.symbol)
             else:
@@ -318,7 +435,7 @@ class FreecellGame():
                 board = board + blank
             else:
                 board = board + c.top_card().draw(cardwidth) + " "
-        # empty space after freecells 
+        # empty space after freecells
         board = board + space*4
         # empty row to avoid confusing freecells with columns
         board = board + "\n" + space*8
@@ -356,6 +473,15 @@ if __name__ == '__main__':
             move = raw_input()
             if move in ['n','N','new']:
                 game = FreecellGame()
+            elif move in ['save','Save']:
+                pass
             else:
-                game.move(move)
+                try:
+                    game.move(move)
+                except InvalidColumnCardError, e:
+                    print "Error: {}".format(e)
+                except InvalidFoundationCardError:
+                    print "Can't move that card to foundation"
+                except Exception, e:
+                    print e
             print game.draw_board(options.width)
