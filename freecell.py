@@ -562,7 +562,10 @@ if __name__ == '__main__':
     parser = OptionParser(usage=usage)
     parser.add_option('-t', '--test', action='store_true', default=False,
                       help="Run doctests")
-    parser.add_option('-w', '--width', default=7, help="Card width")
+    parser.add_option('-w', '--width', type="int", default=7, help="Card width")
+    parser.add_option('-o', '--offset', default=0, type="int",
+                      help="If the 10s make the cards different widths"
+                           " then try some different numbers here")
     options, args = parser.parse_args()
 
     if options.test:
@@ -573,7 +576,7 @@ if __name__ == '__main__':
         game = FreecellGame()
         move = None
         call(['clear'])
-        print game.draw_board(options.width)
+        print game.draw_board(options.width, options.offset)
         while move not in ['q','Q','quit','exit']:
             print "Your move > ",
             move = raw_input()
@@ -596,4 +599,4 @@ if __name__ == '__main__':
                         print "Completed Game! Time: {}, Moves: {}" \
                               .format(duration, len(game.replay))
                         break
-            print game.draw_board(options.width)
+            print game.draw_board(options.width, options.offset)
