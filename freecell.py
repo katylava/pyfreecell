@@ -144,7 +144,7 @@ class AltDescCardColumn(CardStack):
     >>> print fresh.top_stack_for(FreecellCard('k','s'))
     None
     >>> fresh.remove_top_stack_for(js)
-    Ten of Diamonds, Nine of Spades
+    10♢, 9♠
     >>> fresh.top_card() == jc
     True
     """
@@ -216,7 +216,7 @@ class Freecells:
     >>> fcs.get_card_at_position(0) == fcs.empty_cell
     False
     >>> fcs.cells
-    [Five of Hearts, , , ]
+    [5♡, , , ]
     >>> fcs.empty_cell == CardStack([], 1)
     True
     >>> fcs.free()
@@ -231,9 +231,9 @@ class Freecells:
     >>> fcs.first_open()
     1
     >>> fcs.cells
-    [Five of Hearts, , , Two of Hearts]
+    [5♡, , , 2♡]
     >>> fcs.all_cards()
-    [5♥ , None, None, 2♥ ]
+    [5♡ , None, None, 2♡ ]
     """
     empty_cell = CardStack([], 1)
 
