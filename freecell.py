@@ -149,9 +149,9 @@ class AltDescCardColumn(CardStack):
     True
     """
 
-    def top_stack(self):
+    def top_stack(self, length=None):
         clone = copy.deepcopy(self)
-        while not clone.valid():
+        while not clone.valid() or (length and clone.length > length):
             clone.cards.pop(0)
         return clone
 
@@ -182,13 +182,14 @@ class AltDescCardColumn(CardStack):
 
     def top_stack_for(self, card):
         stack = self.top_stack()
-        temp = self.__class__([card])
-        while stack.length > 0 and not temp.allow_stack(stack):
-            stack.cards.pop(0)
+        if card:
+            temp = self.__class__([card])
+            while stack.length > 0 and not temp.allow_stack(stack):
+                stack.cards.pop(0)
         return None if stack.length == 0 else stack
 
-    def remove_top_stack(self):
-        bottom_card = self.top_stack().bottom_card()
+    def remove_top_stack(self, length=None):
+        bottom_card = self.top_stack(length).bottom_card()
         return self.slice_stack(bottom_card)
 
     def remove_top_stack_for(self, card):
@@ -286,6 +287,7 @@ class FreecellGame():
     >>> game.freecell_count()
     4
     >>> game.move('ag')
+    True
     >>> game.freecell_count()
     3
     >>> game.move('m')
@@ -293,6 +295,7 @@ class FreecellGame():
     >>> game.freecell_count()
     4
     >>> game.move('q;') # test moving from freecell to empty column
+    True
     >>> game.freecell_count()
     4
     """
@@ -308,6 +311,33 @@ class FreecellGame():
             self.deck.shuffle()
         else:
             self.deck = deck
+        self.history = []
+        self.replay = []
+        initial_state = {
+            'columns': self.deck.deal(8),
+            'foundation': {'S':[], 'H':[], 'D':[], 'C':[]},
+            'freecells': [],
+        }
+        self.set_state(initial_state)
+        self.add_history()
+
+    def get_state(self):
+        return self.__getstate__()
+
+    def __getstate__(self):
+        foundation = {}
+        for s in self.foundation.keys():
+            foundation[s] = self.foundation[s].cards[:]
+        return {
+            'columns': [c.cards[:] for c in self.columns],
+            'foundation': foundation,
+            'freecells': self.freecells.all_cards()
+        }
+
+    def set_state(self, state):
+        self.__setstate__(state)
+
+    def __setstate__(self, state):
         self.columns = []
         self.freecells = Freecells()
         self.foundation = {
@@ -316,11 +346,22 @@ class FreecellGame():
             'D': FoundationPile('Diamonds'),
             'C': FoundationPile('Clubs'),
         }
-        self.history = []
-        self.replay = []
-        columns = self.deck.deal(8)
-        for c in columns:
-            self.columns.append(AltDescCardColumn(c))
+        for col in state['columns']:
+            self.columns.append(AltDescCardColumn(col))
+        for suit in self.foundation.keys():
+            self.foundation[suit].cards = state['foundation'][suit]
+        for pos, card in enumerate(state['freecells']):
+            if card:
+                self.freecells.add_card(card, pos)
+
+    def add_history(self):
+        self.history.append(self.get_state())
+
+    def undo(self):
+        if len(self.history) == 1:
+            self.set_state(self.history[0])
+        else:
+            self.set_state(self.history.pop())
 
     def top_cards(self):
         return [c.top_card() for c in self.columns]
@@ -341,6 +382,7 @@ class FreecellGame():
         movelist = self.parse_moves(moves)
 
         for fr, to in movelist:
+            card = None
 
             if fr in self.mv_cols:
                 move_from = self.columns[self.mv_cols.index(fr)]
@@ -352,9 +394,8 @@ class FreecellGame():
                 move_from = self.foundation[key]
                 card = move_from.top_card()
             elif fr == 'z':
-                # note the swapped order of 'to' and 'from' wrt to
-                # order when appended to history
-                card, move_to, move_from = self.history[-1]
+                self.undo()
+                return True
             else:
                 raise FreecellInvalidMoveError("'{}' is not a move".format(fr))
 
@@ -374,37 +415,38 @@ class FreecellGame():
                     key = self.mv_found_order[self.mv_found.index(to)]
                 card = move_from.top_card()
                 move_to = self.foundation[key]
-            elif to == 'z':
-                pass # move_to already set in fr == 'z' condition
             else:
                 raise FreecellInvalidMoveError("'{}' is not a move".format(to))
 
-            if not card:
-                card = move_from.top_stack()
-
-            if self.move_card(card, move_from, move_to, (fr=='z')):
+            success = False
+            if card:
+                success = self.move_card(card, move_from, move_to)
+            else:
+                success = self.move_stack(move_from, move_to)
+            if success:
                 self.replay.append('{}{}'.format(fr, to))
+                self.add_history()
+            else:
+                self.set_state(self.history[-1])
+                return False
+        return True
 
-    def move_card(self, card, move_from, move_to, force=False):
-        if isinstance(move_to, AltDescCardColumn) \
-               and isinstance(move_from, AltDescCardColumn) \
-               and move_to.length == 0:
-            self.move_stack(move_from, move_to, None, force)
+    def move_card(self, card, move_from, move_to):
         try:
-            move_to.add_card(card, force)
+            move_to.add_card(card)
         except:
-            stack = card if isinstance(card, CardStack) else None
-            self.move_stack(move_from, move_to, stack, force=force)
+            raise
         else:
             move_from.remove_top_card()
-            self.history.append([card, move_from, move_to])
             return True
 
-    def move_stack(self, move_from, move_to, stack=None, force=False):
+    def move_stack(self, move_from, move_to):
         onto_card = move_to.top_card()
 
-        if not stack:
+        if onto_card:
             stack = move_from.top_stack_for(onto_card)
+        else:
+            stack = move_from.top_stack(self.freecell_count()+1)
 
         if not stack:
             raise FreecellInvalidMoveError(
@@ -413,14 +455,17 @@ class FreecellGame():
 
         if stack.length <= self.freecell_count()+1:
             try:
-                move_to.add_stack(stack, force)
+                move_to.add_stack(stack)
             except InvalidColumnStackError:
                 raise FreecellInvalidMoveError(
                     "Can't move stack '{}' to {}".format(stack, onto_card)
                 )
             else:
-                move_from.remove_top_stack_for(onto_card)
-                self.history.append([stack, move_from, move_to])
+                if onto_card:
+                    move_from.remove_top_stack_for(onto_card)
+                else:
+                    move_from.remove_top_stack(self.freecell_count()+1)
+                return True
         else:
             raise FreecellInvalidMoveError(
                 "Not enough freecells to move stack '{}'".format(stack)
@@ -493,6 +538,7 @@ class FreecellGame():
 
 
 if __name__ == '__main__':
+    from subprocess import call
     from optparse import OptionParser
     usage = "Usage: %prog [--test]"
     parser = OptionParser(usage=usage)
@@ -507,14 +553,17 @@ if __name__ == '__main__':
     else:
         game = FreecellGame()
         move = None
+        call(['clear'])
         print game.draw_board(options.width)
         while move not in ['q','Q','quit','exit']:
-            print "> "
+            print "Your move > ",
             move = raw_input()
             if move in ['n','N','new']:
                 game = FreecellGame()
             elif move in ['save','Save']:
                 pass
+            elif move.startswith('game.'):
+                print eval(move)
             else:
                 try:
                     game.move(move)
@@ -524,4 +573,5 @@ if __name__ == '__main__':
                     print "Can't move that card to foundation"
                 except Exception, e:
                     print e
+            call(['clear'])
             print game.draw_board(options.width)
