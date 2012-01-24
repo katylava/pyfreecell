@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import copy
 from colorize import colorize
@@ -231,6 +232,8 @@ class Freecells:
     1
     >>> fcs.cells
     [Five of Hearts, , , Two of Hearts]
+    >>> fcs.all_cards()
+    [5♥ , None, None, 2♥ ]
     """
     empty_cell = CardStack([], 1)
 
@@ -244,6 +247,9 @@ class Freecells:
 
     def first_open(self):
         return self.cells.index(self.empty_cell)
+
+    def all_cards(self):
+        return [stack.top_card() for stack in self.cells]
 
     def add_card(self, card, position=None):
         if self.free():
