@@ -237,7 +237,7 @@ class CardStack(BaseObject):
     def add_card(self, card, force=False):
         self = self + card
 
-    def add_stack(self, stack):
+    def add_stack(self, stack, force=False):
         self = self + stack
 
     def pop_stack(self, length):
