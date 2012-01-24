@@ -94,7 +94,10 @@ class FoundationPile(CardStack):
         if not top:
             return FreecellCard(rank=CardRank('Ace'), suit=self.suit)
         else:
-            return FreecellCard(top.rank.next_rank(), suit=self.suit)
+            if top.rank.label == 'King':
+                return None
+            else:
+                return FreecellCard(top.rank.next_rank(), suit=self.suit)
 
     def __repr__(self):
         if self.length == 0:
@@ -291,6 +294,7 @@ class FreecellGame():
     >>> game.freecell_count()
     3
     >>> game.move('m')
+    True
     >>> game.columns[7].cards = []
     >>> game.freecell_count()
     4
@@ -320,6 +324,13 @@ class FreecellGame():
         }
         self.set_state(initial_state)
         self.add_history()
+
+    def complete(self):
+        all_kings = True
+        for f in self.foundation.values():
+            if not f.rank() or not f.rank().label == 'King':
+                all_kings = False
+        return all_kings
 
     def get_state(self):
         return self.__getstate__()
@@ -361,6 +372,8 @@ class FreecellGame():
         if len(self.history) == 1:
             self.set_state(self.history[0])
         else:
+            if self.get_state() == self.history[-1]:
+                self.history.pop()
             self.set_state(self.history.pop())
 
     def top_cards(self):
@@ -395,6 +408,7 @@ class FreecellGame():
                 card = move_from.top_card()
             elif fr == 'z':
                 self.undo()
+                self.replay.append('zz')
                 return True
             else:
                 raise FreecellInvalidMoveError("'{}' is not a move".format(fr))
@@ -446,7 +460,10 @@ class FreecellGame():
         if onto_card:
             stack = move_from.top_stack_for(onto_card)
         else:
-            stack = move_from.top_stack(self.freecell_count()+1)
+            length = self.freecell_count()
+            if move_to.length > 0:
+                length = length + 1
+            stack = move_from.top_stack(length)
 
         if not stack:
             raise FreecellInvalidMoveError(
@@ -464,7 +481,7 @@ class FreecellGame():
                 if onto_card:
                     move_from.remove_top_stack_for(onto_card)
                 else:
-                    move_from.remove_top_stack(self.freecell_count()+1)
+                    move_from.remove_top_stack(length)
                 return True
         else:
             raise FreecellInvalidMoveError(
@@ -539,6 +556,7 @@ class FreecellGame():
 
 if __name__ == '__main__':
     from subprocess import call
+    from datetime import datetime
     from optparse import OptionParser
     usage = "Usage: %prog [--test]"
     parser = OptionParser(usage=usage)
@@ -551,6 +569,7 @@ if __name__ == '__main__':
         import doctest
         doctest.testmod()
     else:
+        start = datetime.now()
         game = FreecellGame()
         move = None
         call(['clear'])
@@ -558,6 +577,7 @@ if __name__ == '__main__':
         while move not in ['q','Q','quit','exit']:
             print "Your move > ",
             move = raw_input()
+            call(['clear'])
             if move in ['n','N','new']:
                 game = FreecellGame()
             elif move in ['save','Save']:
@@ -567,11 +587,13 @@ if __name__ == '__main__':
             else:
                 try:
                     game.move(move)
-                except InvalidColumnCardError, e:
-                    print "Error: {}".format(e)
-                except InvalidFoundationCardError:
-                    print "Can't move that card to foundation"
                 except Exception, e:
                     print e
-            call(['clear'])
+                else:
+                    if game.complete():
+                        finish = datetime.now()
+                        duration = finish - start
+                        print "Completed Game! Time: {}, Moves: {}" \
+                              .format(duration, len(game.replay))
+                        break
             print game.draw_board(options.width)
