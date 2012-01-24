@@ -475,11 +475,11 @@ class FreecellGame():
         def recurse():
             next_on_founds = [f.next_card() for f in self.foundation.values()]
             for i, card in enumerate(self.top_cards()):
-                if card in next_on_founds:
+                if card and card in next_on_founds:
                     self.move('{}y'.format(self.mv_cols[i]))
                     return True
             for i, card in enumerate(self.freecells.all_cards()):
-                if card in next_on_founds:
+                if card and card in next_on_founds:
                     self.move('{}y'.format(self.mv_cells[i]))
                     return True
         while recurse():
