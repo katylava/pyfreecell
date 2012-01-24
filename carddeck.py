@@ -36,6 +36,12 @@ class InvalidCardSuitError(Exception):
 class CardStackFullError(Exception):
     pass
 
+class CardNotInStackError(Exception):
+    pass
+
+class InvalidCardStackAdditionError(Exception):
+    pass
+
 class BaseObject(object):
     def __eq__(self, other):
         return isinstance(other, self.__class__) \
@@ -52,6 +58,10 @@ class CardRank(BaseObject):
     >>> next = CardRank('Two')
     >>> rank.next_rank() == next
     True
+    >>> rank.prev_rank()
+    None
+    >>> rank.next_rank().prev_rank().label
+    'Ace'
     """
     rank = None
 
@@ -211,7 +221,7 @@ class CardStack(BaseObject):
     Five of Hearts, Six of Clubs
     """
 
-    def __init__(self, cards, maxlen=None):
+    def __init__(self, cards=[], maxlen=None):
         self.cards = cards
         self.maxlen = maxlen
 
@@ -221,11 +231,31 @@ class CardStack(BaseObject):
         except IndexError:
             return None
 
-    def add_card(self, card):
-        if self.length == self.maxlen:
-            raise CardStackFullError
+    def bottom_card(self):
+        return self.cards[0]
+
+    def add_card(self, card, force=False):
+        self = self + card
+
+    def add_stack(self, stack):
+        self = self + stack
+
+    def pop_stack(self, length):
+        stack = self.__class__()
+        for n in range(0, length):
+            stack.add_card(self.remove_top_card())
+        stack.cards.reverse()
+        return stack
+
+    def slice_stack(self, card):
+        try:
+            index = self.cards.index(card)
+        except ValueError:
+            raise CardNotInStackError
         else:
-            self.cards.append(card)
+            stack = self.__class__(self.cards[index:])
+            self.cards = self.cards[:index]
+            return stack
 
     def card_at(self, position):
         try:
@@ -246,6 +276,20 @@ class CardStack(BaseObject):
     def __repr__(self):
         cards = ['{} of {}'.format(c.rank.label, c.suit.label) for c in self.cards]
         return ', '.join(cards)
+
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            if self.maxlen and self.length + other.length >= self.maxlen:
+                raise CardStackFullError
+            else:
+                self.cards = self.cards + other.cards
+        elif isinstance(other, Card):
+            if self.maxlen and self.length == self.maxlen:
+                raise CardStackFullError
+            else:
+                self.cards.append(other)
+        else:
+            raise InvalidCardStackAdditionError
 
 
 class Deck(BaseObject):
