@@ -289,6 +289,12 @@ class FreecellGame():
     >>> game.freecell_count()
     3
     >>> game.move('m')
+    >>> game.columns[7].cards = []
+    >>> game.freecell_count()
+    4
+    >>> game.move('q;') # test moving from freecell to empty column
+    >>> game.freecell_count()
+    4
     """
     mv_cols = list('asdfjkl;')
     mv_cells = list('qwertg')
@@ -340,17 +346,17 @@ class FreecellGame():
                 move_from = self.columns[self.mv_cols.index(fr)]
             elif fr in self.mv_cells[:-2]: # the last ones are only for moving 'to'
                 move_from = self.freecells.cells[self.mv_cells.index(fr)]
+                card = move_from.top_card()
             elif fr in self.mv_found[:-2]: # the last ones are only for moving 'to' 'y', is only for moving to
                 key = self.mv_found_order[self.mv_found.index(fr)]
                 move_from = self.foundation[key]
+                card = move_from.top_card()
             elif fr == 'z':
                 # note the swapped order of 'to' and 'from' wrt to
                 # order when appended to history
                 card, move_to, move_from = self.history[-1]
             else:
                 raise FreecellInvalidMoveError("'{}' is not a move".format(fr))
-
-            card = move_from.top_card()
 
             if to in self.mv_cols:
                 move_to = self.columns[self.mv_cols.index(to)]
@@ -359,23 +365,30 @@ class FreecellGame():
                     index = self.freecells.first_open()
                 else:
                     index = self.mv_cells.index(to)
+                card = move_from.top_card()
                 move_to = self.freecells.cells[index]
             elif to in self.mv_found:
                 if to in 'yh':
-                    key = card.suit.c
+                    key = move_from.top_card().suit.c
                 else:
                     key = self.mv_found_order[self.mv_found.index(to)]
+                card = move_from.top_card()
                 move_to = self.foundation[key]
             elif to == 'z':
                 pass # move_to already set in fr == 'z' condition
             else:
                 raise FreecellInvalidMoveError("'{}' is not a move".format(to))
 
+            if not card:
+                card = move_from.top_stack()
+
             if self.move_card(card, move_from, move_to, (fr=='z')):
                 self.replay.append('{}{}'.format(fr, to))
 
     def move_card(self, card, move_from, move_to, force=False):
-        if isinstance(move_to, AltDescCardColumn) and move_to.length == 0:
+        if isinstance(move_to, AltDescCardColumn) \
+               and isinstance(move_from, AltDescCardColumn) \
+               and move_to.length == 0:
             self.move_stack(move_from, move_to, None, force)
         try:
             move_to.add_card(card, force)
