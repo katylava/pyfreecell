@@ -512,14 +512,14 @@ class FreecellGame():
         if cardwidth - suit_offset < 5:
             cardwidth = 5 + suit_offset
 
-        longest_column = 0
-        for c in self.columns:
-            if c.length > longest_column:
-                longest_column = c.length
+        longest_column = max([c.length for c in self.columns])
 
         space = " "*((cardwidth - suit_offset)+1)
         blank = "_"*(cardwidth - suit_offset) + " "
         found = "{}" + "_"*(cardwidth - suit_offset - 1) + " "
+        movel = "%".center(cardwidth - suit_offset) + " "
+
+        board = ''
 
         # empty space before foundations
         board = space*4
@@ -530,8 +530,19 @@ class FreecellGame():
                 board = board + found.format(f.suit.symbol)
             else:
                 board = board + f.top_card().draw(cardwidth) + " "
-        # freecells
+
         board = board + "\n"
+
+        # free cell move hints
+        for l in self.mv_cells[:4]:
+            board = board + movel.replace('%',l)
+        # foundation move hints
+        for l in self.mv_found[:4]:
+            board = board + movel.replace('%',l)
+
+        board = board + "\n"
+
+        # freecells
         for c in self.freecells.cells:
             if c.length == 0:
                 board = board + blank
@@ -539,15 +550,19 @@ class FreecellGame():
                 board = board + c.top_card().draw(cardwidth) + " "
         # empty space after freecells
         board = board + space*4
-        # empty row to avoid confusing freecells with columns
+
         board = board + "\n" + space*8
+
         # rows
-        for n in range(0, longest_column):
+        for n in range(0, longest_column+2):
             board = board + "\n"
             for c in self.columns:
                 card = c.card_at(n)
                 if card:
                     board = board + card.draw(cardwidth) + " "
+                elif n == c.length + 1:
+                    pos = self.columns.index(c)
+                    board = board + movel.replace('%',self.mv_cols[pos])
                 else:
                     board = board + space
         return board
@@ -582,6 +597,7 @@ if __name__ == '__main__':
             move = raw_input()
             call(['clear'])
             if move in ['n','N','new']:
+                start = datetime.now()
                 game = FreecellGame()
             elif move in ['save','Save']:
                 pass
