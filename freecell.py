@@ -281,8 +281,8 @@ class FreecellGame():
     4
     """
     mv_cols = list('asdfjkl;')
-    mv_cells = list('qwert')
-    mv_found = list('uiopy')
+    mv_cells = list('qwertg')
+    mv_found = list('uiopyh')
     mv_found_order = list('SHDC')
 
 
@@ -326,9 +326,9 @@ class FreecellGame():
 
             if fr in self.mv_cols:
                 move_from = self.columns[self.mv_cols.index(fr)]
-            elif fr in self.mv_cells[:-1]: # the last one, 't', is only for moving to
+            elif fr in self.mv_cells[:-2]: # the last ones are only for moving 'to'
                 move_from = self.freecells.cells[self.mv_cells.index(fr)]
-            elif fr in self.mv_found[:-1]: # the last one, 'y', is only for moving to
+            elif fr in self.mv_found[:-2]: # the last ones are only for moving 'to' 'y', is only for moving to
                 key = self.mv_found_order[self.mv_found.index(fr)]
                 move_from = self.foundation[key]
             elif fr == 'z':
@@ -343,13 +343,13 @@ class FreecellGame():
             if to in self.mv_cols:
                 move_to = self.columns[self.mv_cols.index(to)]
             elif to in self.mv_cells:
-                if to == 't':
+                if to in 'tg':
                     index = self.freecells.first_open()
                 else:
                     index = self.mv_cells.index(to)
                 move_to = self.freecells.cells[index]
             elif to in self.mv_found:
-                if to == 'y':
+                if to in 'yh':
                     key = card.suit.c
                 else:
                     key = self.mv_found_order[self.mv_found.index(to)]
