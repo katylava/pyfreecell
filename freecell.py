@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import copy
+from colorize import colorize
 from carddeck import Card, CardStack, Deck, CardSuit, CardRank
 
 class FreecellCard(Card):
@@ -8,8 +9,10 @@ class FreecellCard(Card):
     def __init__(self, rank, suit):
         super(FreecellCard, self).__init__(rank, suit)
 
-    def draw(self, width):
-        return self.color(width)
+    def draw(self, width=8):
+        color = self.suit.color
+        text = ' {}{} '.format(self.rank.c, self.suit.filled_symbol)
+        return colorize(text.rjust(width), fg=color, bg='white', var='und', bgalt=True)
 
 
 class FreecellDeck(Deck):
