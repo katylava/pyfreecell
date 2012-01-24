@@ -150,7 +150,7 @@ class CardSuit(BaseObject):
 
     @property
     def symbol(self):
-        if self.color == 'R':
+        if self.color == 'red':
             return self.hollow_symbol
         else:
             return self.filled_symbol
@@ -274,7 +274,7 @@ class CardStack(BaseObject):
         return len(self.cards)
 
     def __repr__(self):
-        cards = ['{} of {}'.format(c.rank.label, c.suit.label) for c in self.cards]
+        cards = ['{} of {}'.format(c.rank.c, c.suit.symbol) for c in self.cards]
         return ', '.join(cards)
 
     def __add__(self, other):
