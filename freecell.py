@@ -285,6 +285,10 @@ class FreecellGame():
     6
     >>> game.freecell_count()
     4
+    >>> game.move('ag')
+    >>> game.freecell_count()
+    3
+    >>> game.move('m')
     """
     mv_cols = list('asdfjkl;')
     mv_cells = list('qwertg')
@@ -319,6 +323,8 @@ class FreecellGame():
         movelist = []
         if moves in ['z', 'zz']:
             movelist.append(('z','z'))
+        elif moves in ['m', 'mm']:
+            self.move_all_to_foundation()
         else:
             moves = list(moves)
             while len(moves) >= 2:
@@ -369,42 +375,57 @@ class FreecellGame():
                 self.replay.append('{}{}'.format(fr, to))
 
     def move_card(self, card, move_from, move_to, force=False):
+        if isinstance(move_to, AltDescCardColumn) and move_to.length == 0:
+            self.move_stack(move_from, move_to, None, force)
         try:
             move_to.add_card(card, force)
         except:
-            self.move_stack(move_from, move_to, force=force)
+            stack = card if isinstance(card, CardStack) else None
+            self.move_stack(move_from, move_to, stack, force=force)
         else:
             move_from.remove_top_card()
             self.history.append([card, move_from, move_to])
             return True
 
-    def move_stack(self, move_from, move_to, force=False):
-        stack = move_from.top_stack_for(move_to.top_card())
+    def move_stack(self, move_from, move_to, stack=None, force=False):
+        onto_card = move_to.top_card()
+
+        if not stack:
+            stack = move_from.top_stack_for(onto_card)
 
         if not stack:
             raise FreecellInvalidMoveError(
-                "No cards in '{}' for {}".format(move_from, move_to.top_card())
+                "No cards in '{}' for {}".format(move_from, onto_card)
             )
 
         if stack.length <= self.freecell_count()+1:
             try:
-                move_to.add_stack(stack)
+                move_to.add_stack(stack, force)
             except InvalidColumnStackError:
-                raise
+                raise FreecellInvalidMoveError(
+                    "Can't move stack '{}' to {}".format(stack, onto_card)
+                )
             else:
-                move_from.remove_top_stack_for(move_to.top_card())
+                move_from.remove_top_stack_for(onto_card)
+                self.history.append([stack, move_from, move_to])
         else:
             raise FreecellInvalidMoveError(
                 "Not enough freecells to move stack '{}'".format(stack)
             )
 
-
     def move_all_to_foundation(self):
-        next_on_founds = [f.next_card() for f in self.foundation.values()]
-        for i, card in enumerate(self.top_cards()):
-            if card in next_on_founds:
-                self.move('{}y'.format(self.mv_cols[i]))
-
+        def recurse():
+            next_on_founds = [f.next_card() for f in self.foundation.values()]
+            for i, card in enumerate(self.top_cards()):
+                if card in next_on_founds:
+                    self.move('{}y'.format(self.mv_cols[i]))
+                    return True
+            for i, card in enumerate(self.freecells.all_cards()):
+                if card in next_on_founds:
+                    self.move('{}y'.format(self.mv_cells[i]))
+                    return True
+        while recurse():
+            recurse()
 
     def freecell_count(self):
         return self.freecells.free() + self.top_cards().count(None)
