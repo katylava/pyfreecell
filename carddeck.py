@@ -200,6 +200,14 @@ class Card(BaseObject):
             # but we want it to be -1
             rank_diff = 1 if rank_diff == -12 else -1
 
+    @property
+    def label(self):
+        return '{} of {}'.format(self.rank.label, self.suit.label)
+
+    @property
+    def code(self):
+        return '{}{}'.format(self.rank.c, self.suit.c)
+
     def __repr__(self):
         return '{}{} '.format(self.rank, self.suit)
 
