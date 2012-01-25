@@ -754,9 +754,9 @@ if __name__ == '__main__':
         error = ""
         gameid = None
         call(['clear'])
-        gamehelp =  "Type 'n' to start a game. Type 2 letters to move card from" \
-                    " spot to another, first the letter near the 'from' pile, then" \
-                    " the letter near the 'to' pile, then hit Enter.\n" \
+        gamehelp =  "Type 'n' to start a game. Type 2 letters to move card from\n" \
+                    "spot to another, first the letter near the 'from' pile, then\n" \
+                    "the letter near the 'to' pile, then hit Enter.\n" \
                     "   n -- new game\n" \
                     "   save -- save game and quit\n" \
                     "   q -- quit without saving\n" \
