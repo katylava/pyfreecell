@@ -825,6 +825,7 @@ if __name__ == '__main__':
 
             if move in ['n','new']:
                 start = datetime.now()
+                gameid = None
                 game = FreecellGame()
             elif move.startswith('play'):
                 try:
