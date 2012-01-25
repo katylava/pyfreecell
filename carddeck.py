@@ -303,6 +303,11 @@ class Deck(BaseObject):
     >>> testcard = Card(3, 'Clubs')
     >>> deck.cards.count(testcard)
     2
+    >>> as_str = deck.__repr__()
+    >>> new_deck = Deck()
+    >>> new_deck.loads(as_str)
+    >>> new_deck.__repr__() == deck.__repr__()
+    True
     """
 
     def __init__(self, number_of_decks=1):
@@ -348,6 +353,20 @@ class Deck(BaseObject):
                 except StopIteration:
                     pass
         return hands
+
+    def loads(self, string, overwrite=True):
+        if overwrite:
+            self.cards = []
+        cards = string.split(',')
+        for c in cards:
+            rank = c[:-1]
+            suit = c[-1]
+            self.cards.append(Card(rank,suit))
+
+
+    def __repr__(self):
+        return ','.join(['{}{}'.format(c.rank.c,c.suit.c) for c in self.cards])
+
 
 
 if __name__ == '__main__':
