@@ -607,12 +607,11 @@ if __name__ == '__main__':
                 try:
                     game.move(move)
                 except Exception, e:
-                    print e
-                else:
-                    if game.complete():
-                        finish = datetime.now()
-                        duration = finish - start
-                        print "Completed Game! Time: {}, Moves: {}" \
-                              .format(duration, len(game.replay))
-                        break
-            print game.draw_board(options.width, options.offset)
+                    print "Error: {}".format(e)
+            if game.complete():
+                finish = datetime.now()
+                duration = finish - start
+                print "Completed Game! Time: {}, Moves: {}" \
+                      .format(duration, len(game.replay))
+            else:
+                print game.draw_board(options.width, options.offset)
