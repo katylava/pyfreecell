@@ -118,8 +118,8 @@ class CardSuit(BaseObject):
     suit = None
 
     def __init__(self, suit):
-        if isinstance(suit, str):
-            suit = suit.title()
+        if isinstance(suit, basestring):
+            suit = suit.title().__str__() # prevent UnicodeWarning
         for s in CARDSUITS:
             if suit == s or suit in s:
                 self.suit = s
@@ -194,9 +194,9 @@ class Card(BaseObject):
     def rel_rank(self, card, round_the_corner=False):
         rank_diff = self.rank.num - card.rank.num
         if round_the_corner and abs(rank_diff) == 12:
-            # if self is A and card is K, rank_diff is -12, 
+            # if self is A and card is K, rank_diff is -12,
             # but we want it to be 1
-            # if self is K and card is A, rank_diff is 12, 
+            # if self is K and card is A, rank_diff is 12,
             # but we want it to be -1
             rank_diff = 1 if rank_diff == -12 else -1
 
