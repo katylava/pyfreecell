@@ -58,7 +58,7 @@ class CardRank(BaseObject):
     >>> next = CardRank('Two')
     >>> rank.next_rank() == next
     True
-    >>> rank.prev_rank()
+    >>> print rank.prev_rank()
     None
     >>> rank.next_rank().prev_rank().label
     'Ace'
@@ -213,12 +213,12 @@ class CardStack(BaseObject):
     >>> stack.length
     1
     >>> print stack
-    Five of Hearts
+    5♡
     >>> stack.add_card(Card('6','c'))
     >>> stack.length
     2
     >>> print stack
-    Five of Hearts, Six of Clubs
+    5♡, 6♣
     """
 
     def __init__(self, cards=[], maxlen=None):
