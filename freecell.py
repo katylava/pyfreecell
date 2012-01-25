@@ -751,7 +751,6 @@ if __name__ == '__main__':
         start = datetime.now()
         game = None
         move = None
-        error = ""
         gameid = None
         call(['clear'])
         gamehelp =  "Type 'n' to start a game. Type 2 letters to move card from\n" \
@@ -782,11 +781,8 @@ if __name__ == '__main__':
 
         while move not in ['q','quit','exit']:
 
-            print error
-            print "--------"
             raw_move = raw_input()
             move = raw_move.lower().strip()
-            call(['clear'])
 
             if move in ['help']:
                 print gamehelp
@@ -853,10 +849,8 @@ if __name__ == '__main__':
                     else:
                         raise Exception("{} is not a valid move".format(move))
                 except Exception, e:
-                    error =  "Error: {}".format(e)
+                    print "Error: {}".format(e)
                     continue
-                else:
-                    error = ""
 
             if game.complete():
                 finish = datetime.now()
@@ -870,4 +864,7 @@ if __name__ == '__main__':
                 history.pp(history.leastmoves(5))
                 continue
             else:
+                call(['clear'])
+                print "--------"
                 print game.draw_board(options.width, options.offset)
+                print "--------"
