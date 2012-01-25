@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import copy
+import os
+import sqlite3
 from colorize import colorize
 from carddeck import Card, CardStack, Deck, CardSuit, CardRank
 
@@ -28,10 +30,15 @@ class FreecellDeck(Deck):
 
     def __init__(self):
         super(FreecellDeck, self).__init__()
+        self._mapcards()
+
+    def loads(self, string):
+        super(FreecellDeck, self).loads(string)
+        self._mapcards()
+
+    def _mapcards(self):
         basic_cards = self.cards
-        self.cards = []
-        for c in basic_cards:
-            self.cards.append(FreecellCard(c.rank, c.suit))
+        self.cards = [FreecellCard(c.rank, c.suit) for c in basic_cards]
 
 
 class NoFreecellsError(Exception):
@@ -293,8 +300,6 @@ class FreecellGame():
     True
     >>> game.freecell_count()
     3
-    >>> game.move('m')
-    True
     >>> game.columns[7].cards = []
     >>> game.freecell_count()
     4
@@ -302,6 +307,15 @@ class FreecellGame():
     True
     >>> game.freecell_count()
     4
+    >>> cards = '8C,7D,10H,6D,KS,4S,5S,9C,7H,6H,AC,JS,7C,5H,AD,2D,3S,AS,QS,10S,2S,8H,8S,9S,9D,3C,10C,9H,3D,2H,QD,5C,KD,JD,JC,AH,6C,4H,7S,QC,5D,4C,10D,4D,QH,8D,3H,6S,KH,KC,2C,JH'
+    >>> game = FreecellGame(cards)
+    >>> game.deck.reset()
+    >>> game.deck.__repr__() == cards
+    True
+    >>> game.columns[0].bottom_card().label
+    'Jack of Hearts'
+    >>> game.columns[3].top_card().label
+    'Eight of Clubs'
     """
     mv_cols = list('asdfjkl;')
     mv_cells = list('qwertg')
@@ -310,11 +324,14 @@ class FreecellGame():
 
 
     def __init__(self, deck=None):
-        if not deck:
+        if isinstance(deck, basestring):
+            self.deck = FreecellDeck()
+            self.deck.loads(deck)
+        elif isinstance(deck, FreecellDeck):
+            self.deck = deck
+        else:
             self.deck = FreecellDeck()
             self.deck.shuffle()
-        else:
-            self.deck = deck
         self.history = []
         self.replay = []
         initial_state = {
@@ -568,15 +585,154 @@ class FreecellGame():
         return board
 
 
+class GameHistory(object):
+    """
+    >>> import random
+    >>> gh = GameHistory('/tmp/testgamehistoryclass{}.db'.format(random.random()))
+    >>> gh.add({'deck':'blah','time':689832,'moves':98,'replay':'asas','complete':1})
+    1
+    >>> gh.add({'deck':'blah2','time':0,'moves':0,'replay':'fgfg','complete':0})
+    2
+    >>> unf = gh.unfinished()
+    >>> len(unf)
+    1
+    >>> unf[0][2]
+    u'blah2'
+    >>> game = FreecellGame()
+    >>> game.move('aqswdefr')
+    True
+    >>> gh.save(game, 30.847, None)
+    3
+    >>> game.deck.reset()
+    >>> record = gh.get(3)
+    >>> record[0][gh.I_DECK] == unicode(game.deck)
+    True
+
+    clean up
+    >>> gh.conn.execute("drop table gamehistory") and True
+    True
+    >>> gh.conn.commit()
+    >>> gh.conn.close()
+    """
+    I_ID = 0
+    I_DATE = 1
+    I_DECK = 2
+    I_TIME = 3
+    I_MOVES = 4
+    I_REPLAY = 5
+    I_COMPL = 6
+
+    def __init__(self, db):
+        db = os.path.expanduser(db)
+        self.conn = sqlite3.connect(db)
+        self.conn.execute("""
+            create table if not exists gamehistory(
+                id integer primary key,
+                datetime text,
+                deck text,
+                time integer,
+                moves integer,
+                replay text,
+                complete integer
+            )
+        """)
+        self.conn.commit()
+
+    def add(self, values):
+        exists = values.get('gameid', None) and self.get(values['gameid'])
+        if exists:
+            query = """
+            update gamehistory
+            set time={time}, moves={moves}, replay='{replay}', complete={complete}
+            where id={gameid}
+            """.format(**values)
+        else:
+            query = """
+            insert into gamehistory
+            (datetime, deck, time, moves, replay, complete) values
+            (datetime('now'), '{deck}', {time}, {moves}, '{replay}', {complete})
+            """.format(**values)
+        gameid = self.conn.execute(query).lastrowid
+        self.conn.commit()
+        return gameid
+
+    def get(self, gameid):
+        return self.select("where id={}".format(gameid))
+
+    def remove(self, gameid):
+        query = "delete from gamehistory where id={}".format(gameid)
+        self.conn.execute(query)
+        self.conn.commit()
+
+    def save(self, game, time=None, gameid=None):
+        game.deck.reset()
+        return self.add({
+            'gameid': gameid or '',
+            'deck': game.deck.__repr__(),
+            'time': int(time) or 0,
+            'moves': len(game.replay),
+            'replay': ''.join(game.replay),
+            'complete': 1 if game.complete() else 0,
+        })
+
+    def besttimes(self, count=10):
+        return self.select("order by time asc limit {}".format(count))
+
+    def leastmoves(self, count=10):
+        return self.select("order by moves desc limit {}".format(count))
+
+    def unfinished(self):
+        return self.select("where complete=0")
+
+    def pp(self, results):
+        order = ['I_ID', 'I_DATE', 'I_TIME', 'I_MOVES', 'I_COMPL']
+        widths = [8, 20, 10, 5, 10]
+        headings = ['Game #', 'Date/Time', 'Time', 'Moves', 'Complete']
+        fmt = "{0:>{width}} |"
+
+        print '| ',
+        for h in headings:
+            print fmt.format(h, width=widths[headings.index(h)]),
+
+        print
+        print '+ ',
+        for w in widths:
+            print "{0:->{width}} +".format('', width=w),
+        print
+
+        for r in results:
+            print '| ',
+            for prop in order:
+                value = r[getattr(self, prop)]
+                width = widths[order.index(prop)]
+                if prop == 'I_TIME' and value not in headings:
+                    value = '{}:{}:{}'.format(
+                        value // 3600, value // 60 % 60, value % 60
+                    )
+                elif prop == 'I_COMPL' and value not in headings:
+                    value = 'X' if value else ' '
+                print fmt.format(value, width=width),
+            print
+
+    def select(self, query):
+        c = self.conn.execute("select * from gamehistory {}".format(query))
+        result = c.fetchall()
+        c.close()
+        return result
+
+
 
 if __name__ == '__main__':
+    import readline
     from subprocess import call
-    from datetime import datetime
+    from datetime import datetime, timedelta
     from optparse import OptionParser
     usage = "Usage: %prog [--test]"
     parser = OptionParser(usage=usage)
     parser.add_option('-t', '--test', action='store_true', default=False,
                       help="Run doctests")
+    parser.add_option('-d', '--db', default="~/.pyfreecell.db",
+                      help="Path to game history database")
     parser.add_option('-w', '--width', type="int", default=7, help="Card width")
     parser.add_option('-o', '--offset', default=0, type="int",
                       help="If the 10s make the cards different widths"
@@ -587,35 +743,126 @@ if __name__ == '__main__':
         import doctest
         doctest.testmod()
     else:
+        history = GameHistory(options.db)
         start = datetime.now()
-        game = FreecellGame()
+        game = None
         move = None
         error = ""
+        gameid = None
         call(['clear'])
-        print game.draw_board(options.width, options.offset)
-        while move not in ['q','Q','quit','exit']:
+        gamehelp =  "Type 'n' to start a game. Type 2 letters to move card from" \
+                    " spot to another, first the letter near the 'from' pile, then" \
+                    " the letter near the 'to' pile, then hit Enter.\n" \
+                    "   n -- new game\n" \
+                    "   save -- save game and quit\n" \
+                    "   q -- quit without saving\n" \
+                    "   a/s/d/f/j/k/l/; -- from/to column\n" \
+                    "   q/w/e/r -- from/to specific free cell\n" \
+                    "   g/t -- to first free cell\n" \
+                    "   u/i/o/p -- from/to specific foundation\n" \
+                    "   h/t -- to appropriate foundation for from card\n" \
+                    "   m -- make all possible foundation moves\n" \
+                    "   z -- undo\n" \
+                    "   show saved n -- show n saved games\n" \
+                    "   show bt n -- show n best times\n" \
+                    "   show lm n -- show n games with least moves\n" \
+                    "   play n restart|resume -- restart/resume game # n\n" \
+                    "   help -- show this help\n"
+
+        print gamehelp
+
+        saved = history.unfinished()
+        if saved:
+            print "\n=====\nSaved\n=====\n"
+            history.pp(saved)
+
+        while move not in ['q','quit','exit']:
+
             print error
-            print "Your move > ",
-            move = raw_input()
+            print "--------"
+            raw_move = raw_input()
+            move = raw_move.lower().strip()
             call(['clear'])
-            if move in ['n','N','new']:
+
+            if move in ['help']:
+                print gamehelp
+                continue
+
+            if move in ['save']:
+                duration = datetime.now() - start
+                print history.save(game, duration.total_seconds(), gameid)
+                break
+
+            if move.startswith('game.') or move.startswith('history.'):
+                print eval(raw_move)
+                continue
+
+            if move.startswith('show'):
+                errmsg = "'show' options are saved, bt (best times), or lm" \
+                         " (games with least moves)"
+                opts = move.split(' ')
+                if len(opts) < 2:
+                    print errmsg
+                else:
+                    action = opts[1]
+                    count = 5 if len(opts) < 3 else opts[2]
+                    if action == 'saved':
+                        history.pp(history.unfinished(count))
+                    elif action == 'bt':
+                        history.pp(history.besttimes(count))
+                    elif action == 'lm':
+                        history.pp(history.leastmoves(count))
+                    else:
+                        print errmsg
+                continue
+
+            if not move and not game:
+                continue
+
+            if move in ['n','new']:
                 start = datetime.now()
                 game = FreecellGame()
-            elif move in ['save','Save']:
-                pass
-            elif move.startswith('game.'):
-                print eval(move)
+            elif move.startswith('play'):
+                try:
+                    z, gameid, begin = move.split()
+                except:
+                    print "To play a saved game type: 'play <gameid> <restart|resume>'"
+                    continue
+                else:
+                    record = history.get(gameid)
+                    if record:
+                        gdeck = record[0][history.I_DECK]
+                        game = FreecellGame(gdeck)
+                        if begin == 'resume':
+                            greplay = record[0][history.I_REPLAY]
+                            gtime = record[0][history.I_TIME]
+                            game.move(greplay)
+                            start = datetime.now() - timedelta(seconds=gtime)
+                    else:
+                        print "Game {} does not exist".format(gameid)
+                        continue
             else:
                 try:
-                    game.move(move)
+                    if game:
+                        game.move(move)
+                    else:
+                        raise Exception("{} is not a valid move".format(move))
                 except Exception, e:
                     error =  "Error: {}".format(e)
+                    continue
                 else:
                     error = ""
+
             if game.complete():
                 finish = datetime.now()
                 duration = finish - start
+                history.save(game, duration.total_seconds(), gameid)
                 print "Completed Game! Time: {}, Moves: {}" \
                       .format(duration, len(game.replay))
+                print "Best Times:"
+                history.pp(history.besttimes(5))
+                print "Least Moves:"
+                history.pp(history.leastmoves(5))
+                continue
             else:
                 print game.draw_board(options.width, options.offset)
