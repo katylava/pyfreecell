@@ -590,9 +590,11 @@ if __name__ == '__main__':
         start = datetime.now()
         game = FreecellGame()
         move = None
+        error = ""
         call(['clear'])
         print game.draw_board(options.width, options.offset)
         while move not in ['q','Q','quit','exit']:
+            print error
             print "Your move > ",
             move = raw_input()
             call(['clear'])
@@ -607,7 +609,9 @@ if __name__ == '__main__':
                 try:
                     game.move(move)
                 except Exception, e:
-                    print "Error: {}".format(e)
+                    error =  "Error: {}".format(e)
+                else:
+                    error = ""
             if game.complete():
                 finish = datetime.now()
                 duration = finish - start
