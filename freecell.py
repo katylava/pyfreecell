@@ -386,6 +386,10 @@ class FreecellGame():
         self.history.append(self.get_state())
 
     def undo(self):
+        # TODO: this needs pop last move off of replay too, as currently
+        # if you undo, play more, undo, play more, when you replay the
+        # moves on initial state board is in state it was never in
+        # during original game play
         if len(self.history) == 1:
             self.set_state(self.history[0])
         else:
