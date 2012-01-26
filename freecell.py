@@ -775,6 +775,8 @@ if __name__ == '__main__':
         gamehelp =  "Type 'n' to start a game. Type 2 letters to move card from\n" \
                     "spot to another, first the letter near the 'from' pile, then\n" \
                     "the letter near the 'to' pile, then hit Enter.\n" \
+                    "You can type more letter pairs before you hit Enter and\n" \
+                    "it will do them all in sequence.\n" \
                     "   n -- new game\n" \
                     "   save -- save game and quit\n" \
                     "   q -- quit without saving\n" \
@@ -784,20 +786,18 @@ if __name__ == '__main__':
                     "   u/i/o/p -- from/to specific foundation\n" \
                     "   h/t -- to appropriate foundation for from card\n" \
                     "   m -- make all possible foundation moves\n" \
-                    "   z -- undo\n" \
-                    "   show saved -- show saved games\n" \
-                    "   show bt n -- show n best times\n" \
-                    "   show lm n -- show n games with least moves\n" \
+                    "   z -- undo (zz to use in same string as other moves)\n" \
+                    "   show -- enter cmd with no args for 'show' help\n" \
                     "   play n restart|resume -- restart/resume game # n\n" \
                     "   ?/help -- show this help\n" \
                     "   py -- enter python interpreter... mostly for inspecting\n" \
                     "         game and history objects\n"
 
-        print gamehelp
+        print colorize(gamehelp, fg='yel')
 
         saved = history.unfinished()
         if saved:
-            print "\n=====\nSaved\n=====\n"
+            print colorize('Saved', fg='cyan', var='und')
             history.pp(saved)
 
         while True:
@@ -824,50 +824,84 @@ if __name__ == '__main__':
                 while True:
                     move = raw_input(colorize('>>> ', fg='blu'))
                     if move.lower() in ['q','quit','exit']:
-                        print colorize("press enter again to see board", fg='yel')
+                        if game and not game.complete():
+                            print colorize("press enter again to see board", fg='yel')
                         break
-                    try:
-                        result = eval(move.strip())
-                        result = pprint.pformat(result)
-                        print colorize(result, fg='green')
-                    except Exception:
-                        import traceback
-                        exc = traceback.format_exc().splitlines()
-                        if len(exc) > 5:
-                            message = '\n'.join(exc)
-                        else:
-                            message = exc[-1]
-                        print colorize(message, fg='red')
+                    if move:
+                        try:
+                            result = eval(move.strip())
+                            result = pprint.pformat(result)
+                            print colorize(result, fg='green')
+                        except Exception:
+                            import traceback
+                            exc = traceback.format_exc().splitlines()
+                            if len(exc) > 5:
+                                message = '\n'.join(exc)
+                            else:
+                                message = exc[-1]
+                            print colorize(message, fg='red')
                 continue
 
             if move.startswith('show'):
-                errmsg = "'show' options are saved, bt (best times), or lm" \
-                         " (games with least moves)... and the secret option" \
-                         " which can be a valid where clause for the" \
-                         " gamehistory table, such as:\n" \
-                         " - where 1=1 order by datetime desc limit 5\n" \
-                         " - where datetime>'2012-01-26 00:00:00'\n" \
-                         " - where 1=1 order by moves desc limit 5\n" \
-                         " - where 1=1 order by time desc limit 5\n"
-                opts = move.split(' ')
-                if len(opts) < 2:
-                    print colorize(errmsg, fg='red')
-                else:
-                    action = opts[1]
-                    count = 5 if len(opts) < 3 else opts[2]
-                    mark = None if not gameid else (0, gameid)
-                    if action == 'saved':
-                        history.pp(history.unfinished())
-                    elif action == 'bt':
-                        history.pp(history.besttimes(count), mark=mark)
-                    elif action == 'lm':
-                        history.pp(history.leastmoves(count), mark=mark)
-                    else:
-                        action = move.partition(' ')[-1]
+                usage = "'show' options are 'saved', 'bt', 'lm', 'last' or 'q'.\n" \
+                         "'bt' = best times\n'lm' = least moves\n" \
+                         "'last' = recent\n'q' = query ('where...' or 'order by...')\n" \
+                         "'bt', 'last', and 'lm' take a 3rd optional arg -- "\
+                         "number of rows to display\n"
+
+                opts = raw_move.split(' ')
+                allow = ['saved','bt','lm','last','q']
+                if len(opts) < 2 or opts[1] not in allow:
+                    print colorize(usage, fg='yel')
+                    opts = ['q', 'last']
+                action = opts[1]
+                count = 5 if len(opts) < 3 else opts[2]
+                mark = None if not gameid else (0, gameid)
+                if action == 'saved':
+                    result = history.unfinished()
+                    heading = 'Saved Games'
+                elif action == 'bt':
+                    result = history.besttimes(count)
+                    heading = 'Best Times'
+                elif action == 'lm':
+                    result = history.leastmoves(count)
+                    heading = 'Least Moves'
+                elif action == 'last':
+                    result = history.select(
+                        "order by datetime desc limit {}".format(count)
+                    )
+                    heading = 'Recent Games'
+                elif action == 'q':
+                    action = ' '.join(opts[2:])
+                    firstword = opts[2]
+                    if firstword not in ['where','order','limit']:
                         try:
-                            history.pp(history.select(action), mark=mark)
-                        except Exception:
-                            print colorize(errmsg, fg='red')
+                            z, where, order, limit = action.split(action[0])
+                        except (IndexError, ValueError):
+                            print colorize('wrong # of params', fg='red')
+                            print colorize(usage, fg='yel')
+                            continue
+                        else:
+                            where = where and 'where {}'.format(where)
+                            order = order and 'order by {}'.format(order)
+                            limit = 'limit {}'.format(limit or 20)
+                            action = '{} {} {}'.format(where, order, limit)
+                    elif 'limit' not in action:
+                        action = '{} limit 20'.format(action)
+
+                    try:
+                        result = history.select(action)
+                        heading = 'games {}'.format(action)
+                    except Exception, e:
+                        import traceback
+                        exc = traceback.format_exc().splitlines()
+                        print colorize(exc[-1], fg='red')
+                        print colorize('Query: {}'.format(action), fg='cyan')
+                        print colorize(usage, fg='yel')
+                        continue
+
+                print colorize(heading, fg='cyan', var='und')
+                history.pp(result, mark=mark)
                 continue
 
             if not move and not game:
