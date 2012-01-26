@@ -680,10 +680,14 @@ class GameHistory(object):
         })
 
     def besttimes(self, count=10):
-        return self.select("order by time asc limit {}".format(count))
+        return self.select(
+            "where complete=1 order by time asc limit {}".format(count)
+        )
 
     def leastmoves(self, count=10):
-        return self.select("order by moves desc limit {}".format(count))
+        return self.select(
+            "where complete=1 order by moves asc limit {}".format(count)
+        )
 
     def unfinished(self):
         return self.select("where complete=0")
