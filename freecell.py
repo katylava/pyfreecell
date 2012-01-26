@@ -706,6 +706,7 @@ class GameHistory(object):
 
         for r in results:
             args = []
+            highlight = mark and r[mark[0]] == mark[1]
             for prop in order:
                 value = r[getattr(self, prop)]
                 width = widths[order.index(prop)]
@@ -715,10 +716,13 @@ class GameHistory(object):
                     )
                 elif prop == 'I_COMPL' and value not in headings:
                     value = 'X' if value else ' '
-                elif mark and prop == 'I_ID' and r[mark[0]] == mark[1]:
+                elif highlight and prop == 'I_ID':
                     value = '{:*>{w}}'.format(value, w=width)
                 args.append(value)
-            table.append(line_fmt.format(*args, w=widths))
+            line = line_fmt.format(*args, w=widths)
+            if highlight:
+                line = colorize(line, var='rev')
+            table.append(line)
 
         table.append(border)
         print '\n'.join(table)
