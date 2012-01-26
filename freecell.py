@@ -737,7 +737,10 @@ class GameHistory(object):
         print '\n'.join(table)
 
     def select(self, query):
-        c = self.conn.execute("select * from gamehistory {}".format(query))
+        c = self.conn.execute(
+            "select id, datetime(datetime, 'localtime'), deck, time, moves, "
+            "replay, complete from gamehistory {}".format(query)
+        )
         result = c.fetchall()
         c.close()
         return result
