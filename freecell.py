@@ -692,31 +692,31 @@ class GameHistory(object):
         order = ['I_ID', 'I_DATE', 'I_TIME', 'I_MOVES', 'I_COMPL']
         widths = [8, 20, 10, 5, 10]
         headings = ['Game #', 'Date/Time', 'Time', 'Moves', 'Complete']
-        fmt = "{0:>{width}} |"
 
-        print '| ',
-        for h in headings:
-            print fmt.format(h, width=widths[headings.index(h)]),
+        total_width = sum(widths) + 3*len(widths) + 1
 
-        print
-        print '+ ',
-        for w in widths:
-            print "{0:->{width}} +".format('', width=w),
-        print
+        col_fmts = ['{N:>{w[N]}}'.replace('N', str(n)) for n in range(0,5)]
+        line_fmt = '| ' + ' | '.join(col_fmts) + ' |'
+        border = '-' * total_width
+
+        table = [border, line_fmt.format(*headings, w=widths), border]
 
         for r in results:
-            print '| ',
+            args = []
             for prop in order:
                 value = r[getattr(self, prop)]
                 width = widths[order.index(prop)]
                 if prop == 'I_TIME' and value not in headings:
-                    value = '{}:{}:{}'.format(
+                    value = '{}:{:02}:{:02}'.format(
                         value // 3600, value // 60 % 60, value % 60
                     )
                 elif prop == 'I_COMPL' and value not in headings:
                     value = 'X' if value else ' '
-                print fmt.format(value, width=width),
-            print
+                args.append(value)
+            table.append(line_fmt.format(*args, w=widths))
+
+        table.append(border)
+        print '\n'.join(table)
 
     def select(self, query):
         c = self.conn.execute("select * from gamehistory {}".format(query))
@@ -856,11 +856,11 @@ if __name__ == '__main__':
                 finish = datetime.now()
                 duration = finish - start
                 history.save(game, duration.total_seconds(), gameid)
-                print "Completed Game! Time: {}, Moves: {}" \
+                print "\nCompleted Game! Time: {}, Moves: {}" \
                       .format(duration, len(game.replay))
-                print "Best Times:"
+                print "\nBest Times:"
                 history.pp(history.besttimes(5))
-                print "Least Moves:"
+                print "\nLeast Moves:"
                 history.pp(history.leastmoves(5))
                 continue
             else:
