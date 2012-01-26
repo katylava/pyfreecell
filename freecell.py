@@ -577,13 +577,12 @@ class FreecellGame():
         # rows
         for n in range(0, longest_column+2):
             board = board + "\n"
-            for c in self.columns:
+            for letter, c in zip(self.mv_cols, self.columns):
                 card = c.card_at(n)
                 if card:
                     board = board + card.draw(cardwidth) + " "
                 elif n == c.length + 1:
-                    pos = self.columns.index(c)
-                    board = board + movel.replace('%',self.mv_cols[pos])
+                    board = board + movel.replace('%',letter)
                 else:
                     board = board + space
         return board
