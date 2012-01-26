@@ -731,7 +731,7 @@ class GameHistory(object):
 
 
 if __name__ == '__main__':
-    import readline
+    import readline, rlcompleter
     from subprocess import call
     from datetime import datetime, timedelta
     from optparse import OptionParser
@@ -751,6 +751,7 @@ if __name__ == '__main__':
         import doctest
         doctest.testmod()
     else:
+        readline.parse_and_bind('tab: complete')
         history = GameHistory(options.db)
         start = datetime.now()
         game = None
