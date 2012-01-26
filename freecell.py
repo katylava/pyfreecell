@@ -288,7 +288,7 @@ class Freecells:
         self.cells[position].remove_top_card()
 
 
-class FreecellGame():
+class FreecellGame(object):
     """
     >>> game = FreecellGame()
     >>> game.columns[0].length
@@ -387,10 +387,6 @@ class FreecellGame():
         self.history.append(self.get_state())
 
     def undo(self):
-        # TODO: this needs pop last move off of replay too, as currently
-        # if you undo, play more, undo, play more, when you replay the
-        # moves on initial state board is in state it was never in
-        # during original game play
         if len(self.history) == 1:
             self.set_state(self.history[0])
         else:
@@ -429,9 +425,7 @@ class FreecellGame():
                 move_from = self.foundation[key]
                 card = move_from.top_card()
             elif fr == 'z':
-                self.undo()
-                self.replay.append('zz')
-                return True
+                pass
             else:
                 raise FreecellInvalidMoveError("'{}' is not a move".format(fr))
 
@@ -451,20 +445,34 @@ class FreecellGame():
                     key = self.mv_found_order[self.mv_found.index(to)]
                 card = move_from.top_card()
                 move_to = self.foundation[key]
+            elif to == 'z':
+                self.undo()
             else:
                 raise FreecellInvalidMoveError("'{}' is not a move".format(to))
 
             success = False
+
             if card:
-                success = self.move_card(card, move_from, move_to)
+                try:
+                    success = self.move_card(card, move_from, move_to)
+                except:
+                    import traceback
+                    message = traceback.format_exc().splitlines()[-1]
+                    print colorize(message, fg='red')
+                    print colorize('move was {}{}'.format(fr,to), fg='cyan')
+                    success = False
+            elif to == 'z':
+                success = True
             else:
                 success = self.move_stack(move_from, move_to)
+
             if success:
                 self.replay.append('{}{}'.format(fr, to))
                 self.add_history()
             else:
                 self.set_state(self.history[-1])
                 return False
+
         return True
 
     def move_card(self, card, move_from, move_to):
