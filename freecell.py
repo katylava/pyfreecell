@@ -847,16 +847,17 @@ if __name__ == '__main__':
                 else:
                     action = opts[1]
                     count = 5 if len(opts) < 3 else opts[2]
+                    mark = None if not gameid else (0, gameid)
                     if action == 'saved':
                         history.pp(history.unfinished())
                     elif action == 'bt':
-                        history.pp(history.besttimes(count))
+                        history.pp(history.besttimes(count), mark=mark)
                     elif action == 'lm':
-                        history.pp(history.leastmoves(count))
+                        history.pp(history.leastmoves(count), mark=mark)
                     else:
                         action = move.partition(' ')[-1]
                         try:
-                            history.pp(history.select(action))
+                            history.pp(history.select(action), mark=mark)
                         except Exception:
                             print colorize(errmsg, fg='red')
                 continue
@@ -897,12 +898,16 @@ if __name__ == '__main__':
                         )
                 except Exception, e:
                     print colorize("Error: {}".format(e), fg='red')
+                    print colorize("If you're getting strange errors try" \
+                                   " hitting Enter again, save and resume",
+                                   fg='cyan')
                     continue
 
             if game.complete():
-                finish = datetime.now()
-                duration = finish - start
-                gameid = history.save(game, duration.total_seconds(), gameid)
+                if not gameid:
+                    finish = datetime.now()
+                    duration = finish - start
+                    gameid = history.save(game, duration.total_seconds(), gameid)
                 print colorize(
                     "\nCompleted Game #{}!\nTime: {}\nMoves: {}" \
                     .format(gameid, duration, len(game.replay)),
