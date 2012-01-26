@@ -854,6 +854,7 @@ if __name__ == '__main__':
                     elif action == 'lm':
                         history.pp(history.leastmoves(count))
                     else:
+                        action = move.partition(' ')[-1]
                         try:
                             history.pp(history.select(action))
                         except Exception:
