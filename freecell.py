@@ -4,6 +4,7 @@
 import copy
 import os
 import sqlite3
+import pprint
 from colorize import colorize
 from carddeck import Card, CardStack, Deck, CardSuit, CardRank
 
@@ -776,11 +777,13 @@ if __name__ == '__main__':
                     "   h/t -- to appropriate foundation for from card\n" \
                     "   m -- make all possible foundation moves\n" \
                     "   z -- undo\n" \
-                    "   show saved n -- show n saved games\n" \
+                    "   show saved -- show saved games\n" \
                     "   show bt n -- show n best times\n" \
                     "   show lm n -- show n games with least moves\n" \
                     "   play n restart|resume -- restart/resume game # n\n" \
-                    "   help -- show this help\n"
+                    "   ?/help -- show this help\n" \
+                    "   py -- enter python interpreter... mostly for inspecting\n" \
+                    "         game and history objects\n"
 
         print gamehelp
 
@@ -789,12 +792,15 @@ if __name__ == '__main__':
             print "\n=====\nSaved\n=====\n"
             history.pp(saved)
 
-        while move not in ['q','quit','exit']:
+        while True:
 
-            raw_move = raw_input()
+            raw_move = raw_input(colorize('move> ', fg='mag'))
             move = raw_move.lower().strip()
 
-            if move in ['help']:
+            if move in ['q','quit','exit']:
+                break
+
+            if move in ['?', 'help']:
                 print gamehelp
                 continue
 
@@ -803,27 +809,55 @@ if __name__ == '__main__':
                 print history.save(game, duration.total_seconds(), gameid)
                 break
 
-            if move.startswith('game.') or move.startswith('history.'):
-                print eval(raw_move)
+            if move == 'py':
+                intro = "python interpreter\n" \
+                        "enter 'q' to quit and return to move interpreter\n"
+                print colorize(intro, fg='yel')
+                while True:
+                    move = raw_input(colorize('>>> ', fg='blu'))
+                    if move.lower() in ['q','quit','exit']:
+                        print colorize("press enter again to see board", fg='yel')
+                        break
+                    try:
+                        result = eval(move.strip())
+                        result = pprint.pformat(result)
+                        print colorize(result, fg='green')
+                    except Exception:
+                        import traceback
+                        exc = traceback.format_exc().splitlines()
+                        if len(exc) > 5:
+                            message = '\n'.join(exc)
+                        else:
+                            message = exc[-1]
+                        print colorize(message, fg='red')
                 continue
 
             if move.startswith('show'):
                 errmsg = "'show' options are saved, bt (best times), or lm" \
-                         " (games with least moves)"
+                         " (games with least moves)... and the secret option" \
+                         " which can be a valid where clause for the" \
+                         " gamehistory table, such as:\n" \
+                         " - where 1=1 order by datetime desc limit 5\n" \
+                         " - where datetime>'2012-01-26 00:00:00'\n" \
+                         " - where 1=1 order by moves desc limit 5\n" \
+                         " - where 1=1 order by time desc limit 5\n"
                 opts = move.split(' ')
                 if len(opts) < 2:
-                    print errmsg
+                    print colorize(errmsg, fg='red')
                 else:
                     action = opts[1]
                     count = 5 if len(opts) < 3 else opts[2]
                     if action == 'saved':
-                        history.pp(history.unfinished(count))
+                        history.pp(history.unfinished())
                     elif action == 'bt':
                         history.pp(history.besttimes(count))
                     elif action == 'lm':
                         history.pp(history.leastmoves(count))
                     else:
-                        print errmsg
+                        try:
+                            history.pp(history.select(action))
+                        except Exception:
+                            print colorize(errmsg, fg='red')
                 continue
 
             if not move and not game:
@@ -857,21 +891,26 @@ if __name__ == '__main__':
                     if game:
                         game.move(move)
                     else:
-                        raise Exception("{} is not a valid move".format(move))
+                        raise Exception(
+                            'No active game. Enter "n" to start, "?" for help.'
+                        )
                 except Exception, e:
-                    print "Error: {}".format(e)
+                    print colorize("Error: {}".format(e), fg='red')
                     continue
 
             if game.complete():
                 finish = datetime.now()
                 duration = finish - start
                 gameid = history.save(game, duration.total_seconds(), gameid)
-                print "\nCompleted Game! Time: {}, Moves: {}" \
-                      .format(duration, len(game.replay))
-                print "\nBest Times:"
+                print colorize(
+                    "\nCompleted Game #{}!\nTime: {}\nMoves: {}" \
+                    .format(gameid, duration, len(game.replay)),
+                    fg='yel'
+                )
+                print colorize("\nBest Times:", fg='yel')
                 history.pp(history.besttimes(5), mark=(0, gameid))
-                print "\nLeast Moves:"
-                history.pp(history.leastmoves(5))
+                print colorize("\nLeast Moves:", fg='yel')
+                history.pp(history.leastmoves(5), mark=(0, gameid))
                 continue
             else:
                 call(['clear'])
