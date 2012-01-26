@@ -692,7 +692,7 @@ class GameHistory(object):
     def unfinished(self):
         return self.select("where complete=0")
 
-    def pp(self, results):
+    def pp(self, results, mark=None):
         order = ['I_ID', 'I_DATE', 'I_TIME', 'I_MOVES', 'I_COMPL']
         widths = [8, 20, 10, 5, 10]
         headings = ['Game #', 'Date/Time', 'Time', 'Moves', 'Complete']
@@ -716,6 +716,8 @@ class GameHistory(object):
                     )
                 elif prop == 'I_COMPL' and value not in headings:
                     value = 'X' if value else ' '
+                elif mark and prop == 'I_ID' and r[mark[0]] == mark[1]:
+                    value = '{:*>{w}}'.format(value, w=width)
                 args.append(value)
             table.append(line_fmt.format(*args, w=widths))
 
@@ -860,11 +862,11 @@ if __name__ == '__main__':
             if game.complete():
                 finish = datetime.now()
                 duration = finish - start
-                history.save(game, duration.total_seconds(), gameid)
+                gameid = history.save(game, duration.total_seconds(), gameid)
                 print "\nCompleted Game! Time: {}, Moves: {}" \
                       .format(duration, len(game.replay))
                 print "\nBest Times:"
-                history.pp(history.besttimes(5))
+                history.pp(history.besttimes(5), mark=(0, gameid))
                 print "\nLeast Moves:"
                 history.pp(history.leastmoves(5))
                 continue
