@@ -689,12 +689,12 @@ class GameHistory(object):
 
     def besttimes(self, count=10):
         return self.select(
-            "where complete=1 order by time asc limit {}".format(count)
+            "where complete=1 order by time asc, moves asc limit {}".format(count)
         )
 
     def leastmoves(self, count=10):
         return self.select(
-            "where complete=1 order by moves asc limit {}".format(count)
+            "where complete=1 order by moves asc, time asc limit {}".format(count)
         )
 
     def unfinished(self):
