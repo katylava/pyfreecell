@@ -941,7 +941,7 @@ if __name__ == '__main__':
                 except Exception, e:
                     print colorize("Error: {}".format(e), fg='red')
                     print colorize("If you're getting strange errors try" \
-                                   " hitting Enter again, save and resume",
+                                   " hitting Enter again, or save and resume",
                                    fg='cyan')
                     continue
 
