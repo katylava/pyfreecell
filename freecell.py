@@ -949,19 +949,26 @@ if __name__ == '__main__':
                     continue
 
             if game.complete():
-                if not gameid:
+                # new games don't have a gameid
+                # resumed games have a gameid but need duration updated
+                # ... so need to make sure we save same game not new game
+                # empty/invalid moves after end of game need to do nothing
+                saved = gameid and history.get(gameid)[0][history.I_COMPL]
+                if not saved:
                     finish = datetime.now()
                     duration = finish - start
+                    # this will save resumed game if gameid, otherwise it
+                    # will save a new game
                     gameid = history.save(game, duration.total_seconds(), gameid)
-                print colorize(
-                    "\nCompleted Game #{}!\nTime: {}\nMoves: {}" \
-                    .format(gameid, duration, len(game.replay)),
-                    fg='yel'
-                )
-                print colorize("\nBest Times:", fg='yel')
-                history.pp(history.besttimes(5), mark=(0, gameid))
-                print colorize("\nLeast Moves:", fg='yel')
-                history.pp(history.leastmoves(5), mark=(0, gameid))
+                    print colorize(
+                        "\nCompleted Game #{}!\nTime: {}\nMoves: {}" \
+                        .format(gameid, duration, len(game.replay)),
+                        fg='yel'
+                    )
+                    print colorize("\nBest Times:", fg='yel')
+                    history.pp(history.besttimes(5), mark=(0, gameid))
+                    print colorize("\nLeast Moves:", fg='yel')
+                    history.pp(history.leastmoves(5), mark=(0, gameid))
                 continue
             else:
                 call(['clear'])
