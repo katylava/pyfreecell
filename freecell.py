@@ -658,13 +658,15 @@ class GameHistory(object):
             set time={time}, moves={moves}, replay='{replay}', complete={complete}
             where id={gameid}
             """.format(**values)
+            gameid = values['gameid']
         else:
             query = """
             insert into gamehistory
             (datetime, deck, time, moves, replay, complete) values
             (datetime('now'), '{deck}', {time}, {moves}, '{replay}', {complete})
             """.format(**values)
-        gameid = self.conn.execute(query).lastrowid
+        cursor = self.conn.execute(query)
+        gameid = gameid or cursor.lastrowid
         self.conn.commit()
         return gameid
 
