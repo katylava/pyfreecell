@@ -651,14 +651,14 @@ class GameHistory(object):
         self.conn.commit()
 
     def add(self, values):
-        exists = values.get('gameid', None) and self.get(values['gameid'])
+        gameid = values.get('gameid', None)
+        exists = gameid and self.get(values['gameid'])
         if exists:
             query = """
             update gamehistory
             set time={time}, moves={moves}, replay='{replay}', complete={complete}
             where id={gameid}
             """.format(**values)
-            gameid = values['gameid']
         else:
             query = """
             insert into gamehistory
@@ -666,9 +666,8 @@ class GameHistory(object):
             (datetime('now'), '{deck}', {time}, {moves}, '{replay}', {complete})
             """.format(**values)
         cursor = self.conn.execute(query)
-        gameid = gameid or cursor.lastrowid
         self.conn.commit()
-        return gameid
+        return gameid or cursor.lastrowid
 
     def get(self, gameid):
         return self.select("where id={}".format(gameid))
@@ -681,7 +680,7 @@ class GameHistory(object):
     def save(self, game, time=None, gameid=None):
         game.deck.reset()
         return self.add({
-            'gameid': gameid or '',
+            'gameid': gameid or 0,
             'deck': game.deck.__repr__(),
             'time': int(time) or 0,
             'moves': len(game.replay),
@@ -925,6 +924,7 @@ if __name__ == '__main__':
                 else:
                     record = history.get(gameid)
                     if record:
+                        gameid = int(gameid) # for 'mark' arg to history.pp()
                         gdeck = record[0][history.I_DECK]
                         game = FreecellGame(gdeck)
                         if begin == 'resume':
