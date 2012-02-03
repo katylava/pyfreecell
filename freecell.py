@@ -815,8 +815,12 @@ if __name__ == '__main__':
 
         while True:
 
-            raw_move = raw_input(colorize('move> ', fg='mag'))
-            move = raw_move.lower().strip()
+            try:
+                raw_move = raw_input(colorize('move> ', fg='mag'))
+            except KeyboardInterrupt:
+                move='q'
+            else:
+                move = raw_move.lower().strip()
 
             if move in ['q','quit','exit']:
                 break
