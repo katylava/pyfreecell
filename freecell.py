@@ -8,6 +8,14 @@ import pprint
 from colorize import colorize
 from carddeck import Card, CardStack, Deck, CardSuit, CardRank
 
+BANNER = """
+      .*.*                                                    .*  .*
+   .*      .*  .*.*    .*.*      .*.*      .*.*.*    .*.*    .*  .*
+.*.*.*.*  .*.*      .*.*.*.*  .*.*.*.*  .*        .*.*.*.*  .*  .*
+ .*      .*        .*        .*        .*        .*        .*  .*
+.*      .*          .*.*.*    .*.*.*    .*.*.*    .*.*.*  .*  .*
+"""
+
 class FreecellCard(Card):
 
     def __init__(self, rank, suit):
@@ -797,6 +805,7 @@ if __name__ == '__main__':
                     "   py -- enter python interpreter... mostly for inspecting\n" \
                     "         game and history objects\n"
 
+        print colorize(BANNER, fg='green')
         print colorize(gamehelp, fg='yel')
 
         saved = history.unfinished()
