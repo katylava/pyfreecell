@@ -1,0 +1,28 @@
+
+http://www.doughellmann.com/PyMOTW/readline/
+-- a better way to do a REPL, including custom completion
+
+when replaying a completed game, save as new game -- maybe create
+option to play with same deck as another game
+
+sometimes empty columns get the wrong letter, then you
+also can't move to them
+
+move gameplay procedural stuff to a seperate file from the class
+declarations
+
+create GamePlay class instead of all that procedural code
+change history.get() so it returns tuple inside of list instead of whole list of results... as it should always only return one result anyway
+
+add plain 'restart' move for use during gameplay to
+restart the current game
+
+don't quit after save, or make save take options like
+'save and quit', 'save and new', 'save and restart'
+
+instead of using ---- for blanks in board, use colorize
+with var=underline and set a different bg for blanks. also color
+hints and draw border around board
+
+invalid card move errors are hidden by screen clear
+
