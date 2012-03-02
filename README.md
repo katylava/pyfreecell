@@ -1,8 +1,8 @@
 **WARNING - WORK IN PROGRESS**
 
-   Usage: freecell.py [--test]
+    Usage: freecell.py [--test]
 
-   Options:
+    Options:
      -h, --help            show this help message and exit
      -t, --test            Run doctests
      -d DB, --db=DB        Path to game history database
