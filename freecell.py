@@ -771,8 +771,10 @@ if __name__ == '__main__':
                       help="Path to game history database")
     parser.add_option('-w', '--width', type="int", default=7, help="Card width")
     parser.add_option('-o', '--offset', default=0, type="int",
-                      help="If the 10s make the cards different widths"
-                           " then try some different numbers here")
+                      help="The difference between the --width and the actual"
+                           " card width when the suit symbols take up less"
+                           " room on screen than their actual width. You will"
+                           " most likely have to set this to 2.")
     options, args = parser.parse_args()
 
     if options.test:

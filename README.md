@@ -1,26 +1,42 @@
-**WARNING - WORK IN PROGRESS**
 
 Requirements:
+
 * Uses sqlite3 to store games played.
-* Color terminal that can handle utf-8
+* Color terminal that can handle utf-8 and bright backgrounds
 
-    Usage: freecell.py [--test]
 
-    Options:
-     -h, --help            show this help message and exit
-     -t, --test            Run doctests
-     -d DB, --db=DB        Path to game history database
-     -w WIDTH, --width=WIDTH
-                           Card width
-     -o OFFSET, --offset=OFFSET
-                           If the 10s make the cards different widths then try
-                           some different numbers here
+        Usage: freecell.py [--test]
+
+        Options:
+         -h, --help            show this help message and exit
+         -t, --test            Run doctests
+         -d DB, --db=DB        Path to game history database
+         -w WIDTH, --width=WIDTH
+                               Card width
+         -o OFFSET, --offset=OFFSET
+                                The difference between the --width and the actual card
+                                width when the suit symbols take up less room on
+                                screen than their actual width. You will most likely
+                                have to set this to 2.
+     
 
 
 In iTerm I run it like `./freecell.py -w 8 -o 2`
 
-This is just an experiment. My intention is to refactor and create a new
-project for more card games.
+Which font you use is very important for lining up the cards and making the
+suit symbols look nice. Some fonts that work well for me:
+
+* DejaVu Sans Mono
+* Chica Mono
+* Menlo
+* Monaco
+* NotCourierSans
+* Onuava
+* Phaisarn (standard only)
+* TeX Gyre Cursor
+* Verily Serif Mono
+
+YMMV
 
 ![start screen](https://img.skitch.com/20120302-cm78ycsti1d827ukgrrhhnun9m.jpg)
 ![game play](https://img.skitch.com/20120302-mkg2srw65jpdt1gnxw1ps6ww24.jpg)
