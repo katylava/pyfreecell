@@ -14,6 +14,8 @@ BANNER = """
 .*.*.*.*  .*.*      .*.*.*.*  .*.*.*.*  .*        .*.*.*.*  .*  .*
  .*      .*        .*        .*        .*        .*        .*  .*
 .*      .*          .*.*.*    .*.*.*    .*.*.*    .*.*.*  .*  .*
+
+by @katylava
 """
 
 class FreecellCard(Card):
@@ -23,7 +25,7 @@ class FreecellCard(Card):
 
     def draw(self, width=8):
         color = self.suit.color
-        text = ' {}{} '.format(self.rank.c, self.suit.filled_symbol)
+        text = '{:>2}{:<2} '.format(self.rank.c, self.suit.filled_symbol)
         return colorize(text.rjust(width), fg=color, bg='white', var='und', bgalt=True)
 
 
@@ -860,11 +862,13 @@ if __name__ == '__main__':
                 continue
 
             if move.startswith('show'):
-                usage = "'show' options are 'saved', 'bt', 'lm', 'last' or 'q'.\n" \
-                         "'bt' = best times\n'lm' = least moves\n" \
-                         "'last' = recent\n'q' = query ('where...' or 'order by...')\n" \
-                         "'bt', 'last', and 'lm' take a 3rd optional arg -- "\
-                         "number of rows to display\n"
+                usage = ("'show' options are 'saved', 'bt', 'lm', 'last' or 'q'."
+                         "\n'bt' = best times "
+                         "\n'lm' = least moves "
+                         "\n'last' = recent "
+                         "\n'q' = query ('where...' or 'order by...') "
+                         "\n'bt', 'last', and 'lm' take a 3rd optional arg -- "
+                         "\nnumber of rows to display\n")
 
                 opts = raw_move.split(' ')
                 allow = ['saved','bt','lm','last','q']
@@ -958,8 +962,8 @@ if __name__ == '__main__':
                         )
                 except Exception, e:
                     print colorize("Error: {}".format(e), fg='red')
-                    print colorize("If you're getting strange errors try" \
-                                   " hitting Enter again, or save and resume",
+                    print colorize("If you're getting strange errors try \
+                                    hitting Enter again, or save and resume",
                                    fg='cyan')
                     continue
 

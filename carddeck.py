@@ -179,7 +179,7 @@ class Card(BaseObject):
 
     def color(self, width=8):
         color = self.suit.color
-        text = ' {}{} '.format(self.rank.c, self.suit.filled_symbol)
+        text = '{:>2}{:<2}'.format(self.rank.c, self.suit.filled_symbol)
         return colorize(text.rjust(width), fg=color, bg='white', bgalt=True)
 
     def is_same_suit_as(self, card):
