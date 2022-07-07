@@ -619,7 +619,7 @@ class GameHistory(object):
     >>> len(unf)
     1
     >>> unf[0][2]
-    u'blah2'
+    'blah2'
     >>> game = FreecellGame()
     >>> game.move('aqswdefr')
     True
@@ -627,7 +627,7 @@ class GameHistory(object):
     3
     >>> game.deck.reset()
     >>> record = gh.get(3)
-    >>> record[0][gh.I_DECK] == unicode(game.deck)
+    >>> record[0][gh.I_DECK] == str(game.deck)
     True
 
     clean up
