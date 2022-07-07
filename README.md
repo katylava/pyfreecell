@@ -1,3 +1,5 @@
+_Aside from updating this for python 3 in 2022, this repo is a 2012 time
+capsule. That said, I still use it._
 
 Requirements:
 
@@ -18,7 +20,7 @@ Requirements:
                                 width when the suit symbols take up less room on
                                 screen than their actual width. You will most likely
                                 have to set this to 2.
-     
+
 
 
 In iTerm I run it like `./freecell.py -w 8 -o 2`
