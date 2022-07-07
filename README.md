@@ -40,6 +40,6 @@ suit symbols look nice. Some fonts that work well for me:
 
 YMMV
 
-![start screen](https://img.skitch.com/20120302-cm78ycsti1d827ukgrrhhnun9m.jpg)
-![game play](https://img.skitch.com/20120302-mkg2srw65jpdt1gnxw1ps6ww24.jpg)
-![show command](https://img.skitch.com/20120302-b4pbrj4gt39x926p1ru1h7tryg.jpg)
+![start screen](https://user-images.githubusercontent.com/10575/177864590-cc07f1b6-9df3-4b10-b489-176f44a8ec55.png)
+![game play](https://user-images.githubusercontent.com/10575/177864753-e246af7d-9c1f-4aaa-9371-77c576394698.png)
+![show command](https://user-images.githubusercontent.com/10575/177864844-fc5ed6db-6450-42ea-b46c-cdbc9a8f3341.png)
