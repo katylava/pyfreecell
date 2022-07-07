@@ -16,7 +16,7 @@ def color_number(color_string):
         'whi': ('7', re.compile('^wh?i?t?e?$')),
     }
 
-    for c,p in patterns.iteritems():
+    for c, p in patterns.items():
         if p[1].match(color_string):
             return p[0]
 
@@ -30,7 +30,7 @@ def variant_number(variant_string):
         'rev': ('7', re.compile('^(r|i)(e|n)?v?e?r?s?')),
     }
 
-    for v,p in patterns.iteritems():
+    for v,p in patterns.items():
         if p[1].match(variant_string):
             return p[0]
 
@@ -50,7 +50,7 @@ def colorize(text, fg='def', bg='def', var='def', bgalt=False, debug=False):
         whole = '{};{}{}'.format(whole, bgnm, bgc)
 
     if debug:
-        print whole
+        print(whole)
 
     return tpl.format(color=whole, text=text)
 

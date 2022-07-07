@@ -160,9 +160,9 @@ class AltDescCardColumn(CardStack):
     >>> js = FreecellCard('J','s')
     >>> fresh.top_stack_for(js).bottom_card() == td
     True
-    >>> print fresh.top_stack_for(FreecellCard(2,'s'))
+    >>> print(fresh.top_stack_for(FreecellCard(2,'s')))
     None
-    >>> print fresh.top_stack_for(FreecellCard('k','s'))
+    >>> print(fresh.top_stack_for(FreecellCard('k','s')))
     None
     >>> fresh.remove_top_stack_for(js)
     10♢, 9♠
@@ -335,7 +335,7 @@ class FreecellGame(object):
 
 
     def __init__(self, deck=None):
-        if isinstance(deck, basestring):
+        if isinstance(deck, str):
             self.deck = FreecellDeck()
             self.deck.loads(deck)
         elif isinstance(deck, FreecellDeck):
@@ -468,8 +468,8 @@ class FreecellGame(object):
                 except:
                     import traceback
                     message = traceback.format_exc().splitlines()[-1]
-                    print colorize(message, fg='red')
-                    print colorize('move was {}{}'.format(fr,to), fg='cyan')
+                    print(colorize(message, fg='red'))
+                    print(colorize('move was {}{}'.format(fr,to), fg='cyan'))
                     success = False
             elif to == 'z':
                 success = True
@@ -745,7 +745,7 @@ class GameHistory(object):
             table.append(line)
 
         table.append(border)
-        print '\n'.join(table)
+        print('\n'.join(table))
 
     def select(self, query):
         c = self.conn.execute(
@@ -809,18 +809,18 @@ if __name__ == '__main__':
                     "   py -- enter python interpreter... mostly for inspecting\n" \
                     "         game and history objects\n"
 
-        print colorize(BANNER, fg='green')
-        print colorize(gamehelp, fg='yel')
+        print(colorize(BANNER, fg='green'))
+        print(colorize(gamehelp, fg='yel'))
 
         saved = history.unfinished()
         if saved:
-            print colorize('Saved', fg='cyan', var='und')
+            print(colorize('Saved', fg='cyan', var='und'))
             history.pp(saved)
 
         while True:
 
             try:
-                raw_move = raw_input(colorize('move> ', fg='mag'))
+                raw_move = input(colorize('move> ', fg='mag'))
             except KeyboardInterrupt:
                 move='q'
             else:
@@ -830,29 +830,29 @@ if __name__ == '__main__':
                 break
 
             if move in ['?', 'help']:
-                print gamehelp
+                print(gamehelp)
                 continue
 
             if move in ['save']:
                 duration = datetime.now() - start
-                print history.save(game, duration.total_seconds(), gameid)
+                print(history.save(game, duration.total_seconds(), gameid))
                 break
 
             if move == 'py':
                 intro = "python interpreter\n" \
                         "enter 'q' to quit and return to move interpreter\n"
-                print colorize(intro, fg='yel')
+                print(colorize(intro, fg='yel'))
                 while True:
-                    move = raw_input(colorize('>>> ', fg='blu'))
+                    move = input(colorize('>>> ', fg='blu'))
                     if move.lower() in ['q','quit','exit']:
                         if game and not game.complete():
-                            print colorize("press enter again to see board", fg='yel')
+                            print(colorize("press enter again to see board", fg='yel'))
                         break
                     if move:
                         try:
                             result = eval(move.strip())
                             result = pprint.pformat(result)
-                            print colorize(result, fg='green')
+                            print(colorize(result, fg='green'))
                         except Exception:
                             import traceback
                             exc = traceback.format_exc().splitlines()
@@ -860,7 +860,7 @@ if __name__ == '__main__':
                                 message = '\n'.join(exc)
                             else:
                                 message = exc[-1]
-                            print colorize(message, fg='red')
+                            print(colorize(message, fg='red'))
                 continue
 
             if move.startswith('show'):
@@ -875,7 +875,7 @@ if __name__ == '__main__':
                 opts = raw_move.split(' ')
                 allow = ['saved','bt','lm','last','q']
                 if len(opts) < 2 or opts[1] not in allow:
-                    print colorize(usage, fg='yel')
+                    print(colorize(usage, fg='yel'))
                     opts = ['q', 'last']
                 action = opts[1]
                 count = 5 if len(opts) < 3 else opts[2]
@@ -901,8 +901,8 @@ if __name__ == '__main__':
                         try:
                             z, where, order, limit = action.split(action[0])
                         except (IndexError, ValueError):
-                            print colorize('wrong # of params', fg='red')
-                            print colorize(usage, fg='yel')
+                            print(colorize('wrong # of params', fg='red'))
+                            print(colorize(usage, fg='yel'))
                             continue
                         else:
                             where = where and 'where {}'.format(where)
@@ -915,15 +915,15 @@ if __name__ == '__main__':
                     try:
                         result = history.select(action)
                         heading = 'games {}'.format(action)
-                    except Exception, e:
+                    except Exception:
                         import traceback
                         exc = traceback.format_exc().splitlines()
-                        print colorize(exc[-1], fg='red')
-                        print colorize('Query: {}'.format(action), fg='cyan')
-                        print colorize(usage, fg='yel')
+                        print(colorize(exc[-1], fg='red'))
+                        print(colorize('Query: {}'.format(action), fg='cyan'))
+                        print(colorize(usage, fg='yel'))
                         continue
 
-                print colorize(heading, fg='cyan', var='und')
+                print(colorize(heading, fg='cyan', var='und'))
                 history.pp(result, mark=mark)
                 continue
 
@@ -938,7 +938,7 @@ if __name__ == '__main__':
                 try:
                     z, gameid, begin = move.split()
                 except:
-                    print "To play a saved game type: 'play <gameid> <restart|resume>'"
+                    print("To play a saved game type: 'play <gameid> <restart|resume>'")
                     continue
                 else:
                     record = history.get(gameid)
@@ -952,7 +952,7 @@ if __name__ == '__main__':
                             game.move(greplay)
                             start = datetime.now() - timedelta(seconds=gtime)
                     else:
-                        print "Game {} does not exist".format(gameid)
+                        print("Game {} does not exist".format(gameid))
                         continue
             else:
                 try:
@@ -962,11 +962,13 @@ if __name__ == '__main__':
                         raise Exception(
                             'No active game. Enter "n" to start, "?" for help.'
                         )
-                except Exception, e:
-                    print colorize("Error: {}".format(e), fg='red')
-                    print colorize("If you're getting strange errors try \
-                                    hitting Enter again, or save and resume",
-                                   fg='cyan')
+                except Exception as e:
+                    print(colorize("Error: {}".format(e), fg='red'))
+                    print(colorize(
+                        "If you're getting strange errors try"
+                        " hitting Enter again, or save and resume",
+                        fg='cyan'
+                    ))
                     continue
 
             if game.complete():
@@ -981,18 +983,18 @@ if __name__ == '__main__':
                     # this will save resumed game if gameid, otherwise it
                     # will save a new game
                     gameid = history.save(game, duration.total_seconds(), gameid)
-                    print colorize(
+                    print(colorize(
                         "\nCompleted Game #{}!\nTime: {}\nMoves: {}" \
                         .format(gameid, duration, len(game.replay)),
                         fg='yel'
-                    )
-                    print colorize("\nBest Times:", fg='yel')
+                    ))
+                    print(colorize("\nBest Times:", fg='yel'))
                     history.pp(history.besttimes(5), mark=(0, gameid))
-                    print colorize("\nLeast Moves:", fg='yel')
+                    print(colorize("\nLeast Moves:", fg='yel'))
                     history.pp(history.leastmoves(5), mark=(0, gameid))
                 continue
             else:
                 call(['clear'])
-                print "--------"
-                print game.draw_board(options.width, options.offset)
-                print "--------"
+                print("--------")
+                print(game.draw_board(options.width, options.offset))
+                print("--------")

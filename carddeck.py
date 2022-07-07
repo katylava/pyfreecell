@@ -58,7 +58,7 @@ class CardRank(BaseObject):
     >>> next = CardRank('Two')
     >>> rank.next_rank() == next
     True
-    >>> print rank.prev_rank()
+    >>> print(rank.prev_rank())
     None
     >>> rank.next_rank().prev_rank().label
     'Ace'
@@ -118,7 +118,7 @@ class CardSuit(BaseObject):
     suit = None
 
     def __init__(self, suit):
-        if isinstance(suit, basestring):
+        if isinstance(suit, str):
             suit = suit.title().__str__() # prevent UnicodeWarning
         for s in CARDSUITS:
             if suit == s or suit in s:
@@ -220,12 +220,12 @@ class CardStack(BaseObject):
     >>> stack.add_card(card)
     >>> stack.length
     1
-    >>> print stack
+    >>> print(stack)
     5♡
     >>> stack.add_card(Card('6','c'))
     >>> stack.length
     2
-    >>> print stack
+    >>> print(stack)
     5♡, 6♣
     """
 
